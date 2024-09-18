@@ -26,10 +26,7 @@
 // The Launchpad's CPU Frequency set to 200 you should not change this value
 #define LAUNCHPAD_CPU_FREQUENCY 200
 
-float x1 = 6.0;
-float x2 = 2.3;
-float x3 = 7.3;
-float x4 = 7.1;
+
 
 // Interrupt Service Routines predefinition
 __interrupt void cpu_timer0_isr(void);
@@ -44,9 +41,15 @@ extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
 
+// JS create a global variable
 int32_t numTimer2calls = 0;
 int16_t checkLEDs = 0;
 int16_t checkButtons = 0;
+
+float x1 = 6.0;
+float x2 = 2.3;
+float x3 = 7.3;
+float x4 = 7.1;
 void setLEDRowsOnOff (int16_t);
 int16_t ReadPushButtons(void);
 void main(void)
@@ -257,9 +260,11 @@ void main(void)
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
     ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+    // JS Change the period to 250000 for exercise 1, and then to 1000 for exercise 4
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 1000);
 
     // Enable CpuTimer Interrupt bit TIE
+    // JS CPU timer 0 & 1 out
     //CpuTimer0Regs.TCR.all = 0x4000;
     //CpuTimer1Regs.TCR.all = 0x4000;
     CpuTimer2Regs.TCR.all = 0x4000;
@@ -292,6 +297,7 @@ void main(void)
     while(1)
     {
         if (UARTPrint == 1 ) {
+            // JS add 32 bit numTimer2calls, 16 bit int checkLEDs pass to SetLEDRowsOnOff, 16 bit int checkButtons returned by ReadPushButtons to serial_print with coresponding formatters %ld for 32 bit int, %d for 16 bit int
 
 			serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld, numTimer2calls:%ld, checkLEDs:%d, ReadPushButton:%d\r\n",CpuTimer2.InterruptCount,numRXA,numTimer2calls,checkLEDs, checkButtons);
             UARTPrint = 0;
@@ -359,30 +365,37 @@ __interrupt void cpu_timer1_isr(void)
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
+    //JS global variables change to see a fact of breakpoints
 	x4 = x3 +2.0;
 	x3 = x4 + 1.3;
 	x1 = 9* x2;
 	x2 = 34* x3;
-
+// JS for exercise 1, increment every time cpu timer 2 is called
     numTimer2calls++;
-	//UARTPrint = 1;
+	// test for small period printing UARTPrint = 1;
     // Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-
     CpuTimer2.InterruptCount++;
+    // JS for exercise 1, to turn on LED rows based on button pressed
+    //setLEDRowsOnOff(checkButtons);
 
-    if(!(ReadPushButtons() & 0x6)){
+    // JS for exercise 2, add bitwise and to check if button 2 and 3 are press, if so, stop incrementing global count integer.
+    // JS checkButtons is 16 bit int returned from ReadPushButtons()
+    checkButtons= ReadPushButtons();
+
+    if(!(checkButtons & 0x6)){
         checkLEDs++;
     }
 
-    checkButtons= ReadPushButtons();
-	
+// JS change to % 100 to slow down blinking LEDs and serial_print every 100 times to CPU Timer 2 interrupt
 	if ((CpuTimer2.InterruptCount % 100) == 0) {
 		UARTPrint = 1;
 		setLEDRowsOnOff(checkLEDs);
 	}
 }
-
+// JS put in 16 bit int rows
+// JS If rows is high at bit 0, then (rows & 0x1) will equal 0x1 and 1st row of LED will be turned on using GpioDataRegs.GPASET.bit.GPIO? from LEDPatterns.c
+// JS otherwise, turn off
 void setLEDRowsOnOff (int16_t rows)
 {
     if ((rows & 0x1) ==0x1){
@@ -395,6 +408,8 @@ void setLEDRowsOnOff (int16_t rows)
         GpioDataRegs.GPECLEAR.bit.GPIO130 = 1;
         GpioDataRegs.GPBCLEAR.bit.GPIO60 = 1;
     }
+    // JS If rows is high at bit 1, then (rows & 0x2) will equal 0x2 and 2nd row of LED will be turned on using GpioDataRegs.GPASET.bit.GPIO? from LEDPatterns.c
+    // JS otherwise, turn off
     if ((rows & 0x2) == 0x2){
         GpioDataRegs.GPCSET.bit.GPIO94 = 1;
         GpioDataRegs.GPESET.bit.GPIO131 = 1;
@@ -405,6 +420,8 @@ void setLEDRowsOnOff (int16_t rows)
         GpioDataRegs.GPECLEAR.bit.GPIO131 = 1;
         GpioDataRegs.GPBCLEAR.bit.GPIO61 = 1;
     }
+    // JS If rows is high at bit 2, then (rows & 0x4) will equal 0x4 and 3rd row of LED will be turned on using GpioDataRegs.GPASET.bit.GPIO? from LEDPatterns.c
+    // JS otherwise, turn off
     if ((rows & 0x4) == 0x4){
         GpioDataRegs.GPCSET.bit.GPIO95 = 1;
         GpioDataRegs.GPASET.bit.GPIO25 = 1;
@@ -415,6 +432,8 @@ void setLEDRowsOnOff (int16_t rows)
         GpioDataRegs.GPACLEAR.bit.GPIO25 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO157 = 1;
     }
+    // JS If rows is high at bit 3, then (rows & 0x8) will equal 0x8 and 4th row of LED will be turned on using GpioDataRegs.GPASET.bit.GPIO? from LEDPatterns.c
+    // JS otherwise, turn off
     if ((rows & 0x8) == 0x8){
         GpioDataRegs.GPDSET.bit.GPIO97 = 1;
         GpioDataRegs.GPASET.bit.GPIO26 = 1;
@@ -425,6 +444,8 @@ void setLEDRowsOnOff (int16_t rows)
         GpioDataRegs.GPACLEAR.bit.GPIO26 = 1;
         GpioDataRegs.GPECLEAR.bit.GPIO158 = 1;
     }
+    // JS If rows is high at bit 4, then (rows & 0x10) will equal 0x10 and 5th row of LED will be turned on using GpioDataRegs.GPASET.bit.GPIO? from LEDPatterns.c
+    // JS otherwise, turn off
     if ((rows & 0x10) == 0x10){
         GpioDataRegs.GPDSET.bit.GPIO111 = 1;
         GpioDataRegs.GPASET.bit.GPIO27 = 1;
@@ -438,19 +459,29 @@ void setLEDRowsOnOff (int16_t rows)
 
 
 }
+// JS get 16 bit int Buttons
+
 int16_t ReadPushButtons(void)
 {
     int16_t Buttons = 0;
+    // JS If button 1 is pressed, GPIO connects to ground, and read 0
+    // JS Buttons|0x1 turn bit 0 of Buttons high
     if (GpioDataRegs.GPADAT.bit.GPIO4 == 0){
         Buttons = Buttons|0x1;
 
     }
+    // JS If button 2 is pressed, GPIO connects to ground, and read 0
+    // JS Buttons|0x2 turn bit 1 of Buttons high
     if (GpioDataRegs.GPADAT.bit.GPIO5 == 0){
         Buttons = Buttons|0x2;
     }
+    // JS If button 3 is pressed, GPIO connects to ground, and read 0
+    // JS Buttons|0x4 turn bit 2 of Buttons high
     if (GpioDataRegs.GPADAT.bit.GPIO6 == 0){
         Buttons = Buttons|0x4;
     }
+    // JS If button 4 is pressed, GPIO connects to ground, and read 0
+    // JS Buttons|0x8 turn bit 3 of Buttons high
     if (GpioDataRegs.GPADAT.bit.GPIO7 == 0){
         Buttons = Buttons|0x8;
     }
