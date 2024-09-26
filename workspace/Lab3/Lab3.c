@@ -16,7 +16,7 @@
 #include "device.h"
 #include "F28379dSerial.h"
 #include "LEDPatterns.h"
-#include "song.h"
+//#include "song.h"
 #include "dsp.h"
 #include "fpu32/fpu_rfft.h"
 
@@ -26,6 +26,139 @@
 // The Launchpad's CPU Frequency set to 200 you should not change this value
 #define LAUNCHPAD_CPU_FREQUENCY 200
 
+
+#define C4NOTE ((uint16_t)(((50000000/2)/2)/261.63))
+#define D4NOTE ((uint16_t)(((50000000/2)/2)/293.66))
+#define E4NOTE ((uint16_t)(((50000000/2)/2)/329.63))
+#define F4NOTE ((uint16_t)(((50000000/2)/2)/349.23))
+#define G4NOTE ((uint16_t)(((50000000/2)/2)/392.00))
+#define A4NOTE ((uint16_t)(((50000000/2)/2)/440.00))
+#define B4NOTE ((uint16_t)(((50000000/2)/2)/493.88))
+#define C5NOTE ((uint16_t)(((50000000/2)/2)/523.25))
+#define D5NOTE ((uint16_t)(((50000000/2)/2)/587.33))
+#define E5NOTE ((uint16_t)(((50000000/2)/2)/659.25))
+#define F5NOTE ((uint16_t)(((50000000/2)/2)/698.46))
+#define G5NOTE ((uint16_t)(((50000000/2)/2)/783.99))
+#define A5NOTE ((uint16_t)(((50000000/2)/2)/880.00))
+#define B5NOTE ((uint16_t)(((50000000/2)/2)/987.77))
+#define F4SHARPNOTE ((uint16_t)(((50000000/2)/2)/369.99))
+#define G4SHARPNOTE ((uint16_t)(((50000000/2)/2)/415.3))
+#define A4FLATNOTE ((uint16_t)(((50000000/2)/2)/415.3))
+#define C5SHARPNOTE ((uint16_t)(((50000000/2)/2)/554.37))
+#define A5FLATNOTE ((uint16_t)(((50000000/2)/2)/830.61))
+#define OFFNOTE 0
+#define SONG_LENGTH 61
+//uint16_t songarray[SONG_LENGTH] = {
+//E4NOTE,
+//OFFNOTE,
+//E4NOTE,
+//OFFNOTE,
+//F4SHARPNOTE,
+//F4SHARPNOTE,
+//F4SHARPNOTE,
+//F4SHARPNOTE,
+//E4NOTE,
+//E4NOTE,
+//E4NOTE,
+//E4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//G4SHARPNOTE,
+//E4NOTE,
+//OFFNOTE,
+//E4NOTE,
+//OFFNOTE,
+//F4SHARPNOTE,
+//F4SHARPNOTE,
+//F4SHARPNOTE,
+//F4SHARPNOTE,
+//E4NOTE,
+//E4NOTE,
+//E4NOTE,
+//E4NOTE,
+//B4NOTE,
+//B4NOTE,
+//B4NOTE,
+//B4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE,
+//A4NOTE};
+uint16_t songarray[SONG_LENGTH] = {
+E4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+C4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+E4NOTE,
+E4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+D4NOTE,
+D4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+G4NOTE,
+OFFNOTE,
+G4NOTE,
+G4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+C4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+E4NOTE,
+OFFNOTE,
+D4NOTE,
+OFFNOTE,
+C4NOTE,
+OFFNOTE,
+C4NOTE,
+OFFNOTE,
+C4NOTE,
+OFFNOTE,
+C4NOTE,
+OFFNOTE};
 
 // Interrupt Service Routines predefinition
 __interrupt void cpu_timer0_isr(void);
@@ -42,6 +175,7 @@ uint16_t LEDdisplaynum = 0;
 int16_t updown = 1;
 int16_t mycount = 0;
 float motorcount = 0.0;
+int16_t songindex = 0;
 
 void main(void)
 {
@@ -71,6 +205,7 @@ void main(void)
     GPIO_SetupPinMux(14, GPIO_MUX_CPU1, 1);
     GPIO_SetupPinMux(15, GPIO_MUX_CPU1, 1);
     GPIO_SetupPinMux(16, GPIO_MUX_CPU1, 5);
+    GPIO_SetupPinMux(104, GPIO_MUX_CPU1, 6);
 	// LED2
     GPIO_SetupPinMux(94, GPIO_MUX_CPU1, 0);
     GPIO_SetupPinOptions(94, GPIO_OUTPUT, GPIO_PUSHPULL);
@@ -255,7 +390,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 10000);
-    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 125000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 10000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -296,9 +431,9 @@ void main(void)
     //JS 2/3
     EPwm8Regs.TBCTL.bit.FREE_SOFT = 2;
     EPwm8Regs.TBCTL.bit.PHSEN = 0;
-    EPwm8Regs.TBCTL.bit.CLKDIV = 0;
+    EPwm8Regs.TBCTL.bit.CLKDIV = 4;
     EPwm8Regs.TBCTR = 0;
-    EPwm8Regs.TBPRD = 2500;
+    EPwm8Regs.TBPRD = 65535;
     EPwm8Regs.CMPA.bit.CMPA = 0;
     EPwm8Regs.CMPB.bit.CMPB = 0;
     EPwm8Regs.AQCTLA.bit.CAU = 1;
@@ -311,12 +446,12 @@ void main(void)
     //JS 2/3
     EPwm9Regs.TBCTL.bit.FREE_SOFT = 2;
     EPwm9Regs.TBCTL.bit.PHSEN = 0;
-    EPwm9Regs.TBCTL.bit.CLKDIV = 0;
+    EPwm9Regs.TBCTL.bit.CLKDIV = 1;
     EPwm9Regs.TBCTR = 0;
     EPwm9Regs.TBPRD = 2500;
-    EPwm9Regs.CMPA.bit.CMPA = 0;
-    EPwm9Regs.AQCTLA.bit.CAU = 1;
-    EPwm9Regs.AQCTLA.bit.ZRO = 2;
+    //EPwm9Regs.CMPA.bit.CMPA = 0;
+    EPwm9Regs.AQCTLA.bit.CAU = 0;
+    EPwm9Regs.AQCTLA.bit.ZRO = 3;
     EPwm9Regs.TBPHS.bit.TBPHS = 0;
 
     EALLOW; // Below are protected registers
@@ -345,7 +480,7 @@ void main(void)
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
 	
 	init_serialSCIC(&SerialC,115200);
-	init_serialSCID(&SerialD,115200);
+	//init_serialSCID(&SerialD,115200);
     // Enable global Interrupts and higher priority real-time debug events
     EINT;  // Enable Global interrupt INTM
     ERTM;  // Enable Global realtime interrupt DBGM
@@ -380,6 +515,26 @@ void setEPWM2B(float controleffort){
         controleffort = -10;
     }
     EPwm2Regs.CMPB.bit.CMPB = ((controleffort + (float)10))/ ((float)20)* EPwm2Regs.TBPRD;
+}
+void setEPWM8A_RCServo(float angle)
+{
+    if (angle > 90){
+        angle = 90;
+    }
+    if (angle < -90){
+        angle = -90;
+    }
+    EPwm8Regs.CMPA.bit.CMPA = ((((float)8/(float)180)*angle+(float)8)/100)* EPwm8Regs.TBPRD;
+}
+void setEPWM8B_RCServo(float angle)
+{
+    if (angle > 90){
+        angle = 90;
+    }
+    if (angle < -90){
+        angle = -90;
+    }
+    EPwm8Regs.CMPB.bit.CMPB = ((((float)8/(float)180)*angle+(float)8)/100)* EPwm8Regs.TBPRD;
 }
 // SWI_isr,  Using this interrupt as a Software started interrupt
 __interrupt void SWI_isr(void) {
@@ -433,40 +588,76 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-		
+    if (songindex >= SONG_LENGTH){
+        GPIO_SetupPinMux(16, GPIO_MUX_CPU1, 0);
+        GpioDataRegs.GPACLEAR.bit.GPIO16 = 1;
+    }
+    if (songindex<SONG_LENGTH){
+        EPwm9Regs.TBPRD = songarray[songindex];
+        songindex++;
+    }
+
+
     CpuTimer1.InterruptCount++;
+
 }
 
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
 
-    if (updown == 1){
-        mycount++;
-        motorcount+=0.1;
-        setEPWM2A(motorcount);
-        setEPWM2B(motorcount);
-	    EPwm12Regs.CMPA.bit.CMPA = mycount;
-	    if (motorcount >= 10.0){
-	        updown =0;
-	    }
-//        if (mycount == EPwm12Regs.TBPRD){
-//            updown = 0;
+//    if (updown == 1){
+//        mycount++;
+//        motorcount+=0.1;
+//        setEPWM2A(motorcount);
+//        setEPWM2B(motorcount);
+//
+//	    EPwm12Regs.CMPA.bit.CMPA = mycount;
+//	    if (motorcount >= 10.0){
+//	        updown =0;
+//	    }
+////        if (mycount == EPwm12Regs.TBPRD){
+////            updown = 0;
+////        }
+//	}
+//    else{
+//        mycount--;
+//        motorcount-=0.1;
+//        setEPWM2A(motorcount);
+//        setEPWM2B(motorcount);
+//
+//        EPwm12Regs.CMPA.bit.CMPA = mycount;
+//        if (motorcount <= -10.0){
+//            updown = 1;
 //        }
-	}
-    else{
-        mycount--;
-        motorcount-=0.1;
-        setEPWM2A(motorcount);
-        setEPWM2B(motorcount);
-        EPwm12Regs.CMPA.bit.CMPA = mycount;
-        if (motorcount <= -10.0){
-            updown = 1;
-        }
 //        if (mycount == 0){
 //            updown = 1;
 //        }
-	}
+//	}
+
+    if (updown == 1){
+            mycount++;
+            motorcount+=0.1;
+            setEPWM8A_RCServo(motorcount);
+            setEPWM8B_RCServo(motorcount);
+            EPwm12Regs.CMPA.bit.CMPA = mycount;
+            if (motorcount >= 90.0){
+                updown =0;
+            }
+    //        if (mycount == EPwm12Regs.TBPRD){
+    //            updown = 0;
+    //        }
+        }
+        else{
+            mycount--;
+            motorcount-=0.1;
+            setEPWM8A_RCServo(motorcount);
+            setEPWM8B_RCServo(motorcount);
+            EPwm12Regs.CMPA.bit.CMPA = mycount;
+            if (motorcount <= -90.0){
+                updown = 1;
+            }
+        }
 
     // Blink LaunchPad Blue LED
     GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
@@ -477,4 +668,5 @@ __interrupt void cpu_timer2_isr(void)
 		UARTPrint = 1;
 	}
 }
+
 
