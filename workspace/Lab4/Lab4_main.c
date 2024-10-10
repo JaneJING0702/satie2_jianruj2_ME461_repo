@@ -41,8 +41,19 @@ uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
 int16_t adcd0result =0;
 int16_t adcd1result =0;
+int16_t adca2result =0;
+int16_t adca3result =0;
+int16_t adcb1result =0;
 float volts0 = 0.0;
 int32_t ADCD1count =0;
+int32_t ADCA1count =0;
+int32_t ADCB1count =0;
+float xka2=0;
+float xka3=0;
+float yka2=0;
+float yka3=0;
+float xkb1 =0;
+float ykb1=0;
 
 //This function sets DACA to the voltage between 0V and 3V passed to this function.
 //If outside 0V to 3V the output is saturated at 0V to 3V
@@ -80,9 +91,175 @@ float yk = 0;
 //              3.3833240118424500e-02}; // 0.2 is 1/5th therefore a 5 point average
 //float b[5] = {0.2,0.2,0.2,0.2,0.2};
 
-float b[] = {0};
+//float b[] = {3.3833240118424500e-02,
+//                            2.4012702387971543e-01,
+//                            4.5207947200372001e-01,
+//                            2.4012702387971543e-01,
+//                            3.3833240118424500e-02};
+//float b[22]={   -2.3890045153263611e-03,
+//    -3.3150057635348224e-03,
+//    -4.6136191242627002e-03,
+//    -4.1659855521681268e-03,
+//    1.4477422497795286e-03,
+//    1.5489414225159667e-02,
+//    3.9247886844071371e-02,
+//    7.0723964095458614e-02,
+//    1.0453473887246176e-01,
+//    1.3325672639406205e-01,
+//    1.4978314227429904e-01,
+//    1.4978314227429904e-01,
+//    1.3325672639406205e-01,
+//    1.0453473887246176e-01,
+//    7.0723964095458614e-02,
+//    3.9247886844071371e-02,
+//    1.5489414225159667e-02,
+//    1.4477422497795286e-03,
+//    -4.1659855521681268e-03,
+//    -4.6136191242627002e-03,
+//    -3.3150057635348224e-03,
+//    -2.3890045153263611e-03};
+
+//float b[32]={   -6.3046914864397922e-04,
+//    -1.8185681242784432e-03,
+//    -2.5619416124584822e-03,
+//    -1.5874939943956356e-03,
+//    2.3695126689747326e-03,
+//    8.3324969783531780e-03,
+//    1.1803612855040625e-02,
+//    6.7592967793297151e-03,
+//    -9.1745119977290398e-03,
+//    -2.9730906886035850e-02,
+//    -3.9816452266421651e-02,
+//    -2.2301647638687881e-02,
+//    3.1027965907247105e-02,
+//    1.1114350049251465e-01,
+//    1.9245540210070616e-01,
+//    2.4373020388648489e-01,
+//    2.4373020388648489e-01,
+//    1.9245540210070616e-01,
+//    1.1114350049251465e-01,
+//    3.1027965907247105e-02,
+//    -2.2301647638687881e-02,
+//    -3.9816452266421651e-02,
+//    -2.9730906886035850e-02,
+//    -9.1745119977290398e-03,
+//    6.7592967793297151e-03,
+//    1.1803612855040625e-02,
+//    8.3324969783531780e-03,
+//    2.3695126689747326e-03,
+//    -1.5874939943956356e-03,
+//    -2.5619416124584822e-03,
+//    -1.8185681242784432e-03,
+//    -6.3046914864397922e-04};
+
+float b[101]={  -2.9880028485706014e-18,
+    1.0014161157911048e-04,
+    -5.2618551547237234e-04,
+    -7.7962413218288327e-04,
+    3.8326299947443642e-04,
+    1.4468607075027277e-03,
+    4.7641201701853882e-04,
+    -1.1966077184856539e-03,
+    -9.8442612457462801e-04,
+    2.2426543490299702e-04,
+    -1.3055511470703196e-18,
+    -2.8856900257159991e-04,
+    1.6267183735412948e-03,
+    2.5290719210008640e-03,
+    -1.2795608153376812e-03,
+    -4.8925823855322497e-03,
+    -1.6113987990414897e-03,
+    4.0107106316287265e-03,
+    3.2480258555224279e-03,
+    -7.2516689926356299e-04,
+    1.8056386897280851e-17,
+    8.9007602241939149e-04,
+    -4.8948933522602461e-03,
+    -7.4262043229105694e-03,
+    3.6693671696644108e-03,
+    1.3718600126208420e-02,
+    4.4244260206582689e-03,
+    -1.0801717429888814e-02,
+    -8.5964585113028728e-03,
+    1.8899182131726397e-03,
+    -5.3057330072547164e-18,
+    -2.2642270131377727e-03,
+    1.2346792985290733e-02,
+    1.8623150986016437e-02,
+    -9.1751382337289834e-03,
+    -3.4312641521119479e-02,
+    -1.1108970111065547e-02,
+    2.7336258194538145e-02,
+    2.2030316909781834e-02,
+    -4.9314814569541088e-03,
+    7.0946687196014922e-18,
+    6.2561782550849951e-03,
+    -3.5604150484977087e-02,
+    -5.6784697958734962e-02,
+    3.0104607026376420e-02,
+    1.2416425489455964e-01,
+    4.5989918232812586e-02,
+    -1.3743489446447751e-01,
+    -1.5046109818463846e-01,
+    6.0593548159411273e-02,
+    1.9952895080570546e-01,
+    6.0593548159411273e-02,
+    -1.5046109818463846e-01,
+    -1.3743489446447751e-01,
+    4.5989918232812586e-02,
+    1.2416425489455964e-01,
+    3.0104607026376420e-02,
+    -5.6784697958734962e-02,
+    -3.5604150484977087e-02,
+    6.2561782550849951e-03,
+    7.0946687196014922e-18,
+    -4.9314814569541088e-03,
+    2.2030316909781834e-02,
+    2.7336258194538145e-02,
+    -1.1108970111065547e-02,
+    -3.4312641521119479e-02,
+    -9.1751382337289834e-03,
+    1.8623150986016437e-02,
+    1.2346792985290733e-02,
+    -2.2642270131377727e-03,
+    -5.3057330072547164e-18,
+    1.8899182131726397e-03,
+    -8.5964585113028728e-03,
+    -1.0801717429888814e-02,
+    4.4244260206582689e-03,
+    1.3718600126208420e-02,
+    3.6693671696644108e-03,
+    -7.4262043229105694e-03,
+    -4.8948933522602461e-03,
+    8.9007602241939149e-04,
+    1.8056386897280851e-17,
+    -7.2516689926356299e-04,
+    3.2480258555224279e-03,
+    4.0107106316287265e-03,
+    -1.6113987990414897e-03,
+    -4.8925823855322497e-03,
+    -1.2795608153376812e-03,
+    2.5290719210008640e-03,
+    1.6267183735412948e-03,
+    -2.8856900257159991e-04,
+    -1.3055511470703196e-18,
+    2.2426543490299702e-04,
+    -9.8442612457462801e-04,
+    -1.1966077184856539e-03,
+    4.7641201701853882e-04,
+    1.4468607075027277e-03,
+    3.8326299947443642e-04,
+    -7.7962413218288327e-04,
+    -5.2618551547237234e-04,
+    1.0014161157911048e-04,
+    -2.9880028485706014e-18};
+
+
 float volts1 = 0.0;
-float xkarray[sizeof(b)]={};
+float xkarray[22]={};
+float xka2array[22]={};
+float xka3array[22]={};
+float xkb1array[101]={};
 //adcd1 pie interrupt
 __interrupt void ADCD_ISR (void) {
     adcd0result = AdcdResultRegs.ADCRESULT0;
@@ -90,7 +267,8 @@ __interrupt void ADCD_ISR (void) {
     // Here covert ADCIND0, ADCIND1 to volts
     xk = (adcd0result/4096.0)*3.0;
     volts1 = (adcd1result/4096.0)*3.0;
-    for (int i = sizeof(b)-1; i>0; i--){
+    yk = 0;
+    for (int i = 21; i>0; i--){
         xkarray[i]=xkarray[i-1];
         yk += xkarray[i]*b[i];
     }
@@ -99,10 +277,10 @@ __interrupt void ADCD_ISR (void) {
     //yk = b[0]*xk + b[1]*xk_1 + b[2]*xk_2 + b[3]*xk_3 + b[4]*xk_4;
 
     //Save past states before exiting from the function so that next sample they are the older state
-    xk_4 = xk_3;
-    xk_3 = xk_2;
-    xk_2 = xk_1;
-    xk_1 = xk;
+//    xk_4 = xk_3;
+//    xk_3 = xk_2;
+//    xk_2 = xk_1;
+//    xk_1 = xk;
     // Here write yk to DACA channel
     setDACA(yk);
     // Print ADCIND0 and ADCIND1’s voltage value to TeraTerm every 100ms
@@ -113,6 +291,63 @@ __interrupt void ADCD_ISR (void) {
     AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
+
+
+__interrupt void ADCA_ISR (void) {
+    adca2result = AdcaResultRegs.ADCRESULT0;
+    adca3result = AdcaResultRegs.ADCRESULT1;
+    //
+    xka2 = (adca2result/4096.0)*3.0;
+    xka3 = (adca3result/4096.0)*3.0;
+    yka2 = 0;
+    yka3=0;
+    for (int i = 21; i>0; i--){
+        xka2array[i]=xka2array[i-1];
+        xka3array[i]=xka3array[i-1];
+        yka2 += xka2array[i]*b[i];
+        yka3 += xka3array[i]*b[i];
+    }
+    xka2array[0]=xka2;
+    xka3array[0]=xka3;
+    yka2 += xka2array[0]*b[0];
+    yka3 += xka3array[0]*b[0];
+    // Here write yk to DACA channel
+//    setDACA(yk);
+//
+    // Print  voltage value to TeraTerm every 100ms
+    ADCA1count++;
+    if (ADCA1count % 100 == 0){
+        UARTPrint = 1;
+    }
+    AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+}
+
+__interrupt void ADCB_ISR (void) {
+    GpioDataRegs.GPBSET.bit.GPIO52 = 1;
+    adcb1result = AdcbResultRegs.ADCRESULT0;
+    xkb1 = (adcb1result/4096.0)*3.0;
+    ykb1 = 0;
+    for (int i = 100; i>0; i--){
+        xkb1array[i]=xkb1array[i-1];
+        ykb1 += xkb1array[i]*b[i];
+    }
+    xkb1array[0]=xkb1;
+    ykb1 += xkb1array[0]*b[0];
+    // Here write yk to DACA channel
+    setDACA(ykb1+1.5);
+//
+    // Print  voltage value to TeraTerm every 100ms
+    ADCB1count++;
+    if (ADCB1count % 100 == 0){
+        UARTPrint = 1;
+    }
+    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+    GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
+}
+
+
 ////adcd1 pie interrupt
 //__interrupt void ADCD_ISR (void) {
 //    adcd0result = AdcdResultRegs.ADCRESULT0;
@@ -137,6 +372,9 @@ void main(void)
     InitSysCtrl();
 
     InitGpio();
+
+    GPIO_SetupPinMux(52, GPIO_MUX_CPU1, 0);
+    GPIO_SetupPinOptions(52, GPIO_OUTPUT, GPIO_PUSHPULL);
 	
 	// Blue LED on LaunchPad
     GPIO_SetupPinMux(31, GPIO_MUX_CPU1, 0);
@@ -317,7 +555,9 @@ void main(void)
     PieVectTable.TIMER0_INT = &cpu_timer0_isr;
     PieVectTable.TIMER1_INT = &cpu_timer1_isr;
     PieVectTable.TIMER2_INT = &cpu_timer2_isr;
-    PieVectTable.ADCD1_INT = &ADCD_ISR;
+//    PieVectTable.ADCD1_INT = &ADCD_ISR;
+//    PieVectTable.ADCA1_INT = &ADCA_ISR;
+    PieVectTable.ADCB1_INT = &ADCB_ISR;
     PieVectTable.SCIA_RX_INT = &RXAINT_recv_ready;
     PieVectTable.SCIB_RX_INT = &RXBINT_recv_ready;
     PieVectTable.SCIC_RX_INT = &RXCINT_recv_ready;
@@ -357,7 +597,9 @@ void main(void)
 	EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
 	EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
 	EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
-	EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
+//	EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
+//	EPwm5Regs.TBPRD = 12500;
+    EPwm5Regs.TBPRD = 5000;
 	// Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
 	EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
 	EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
@@ -388,31 +630,31 @@ void main(void)
 	//Select the channels to convert and end of conversion flag
 	//Many statements commented out, To be used when using ADCA or ADCB
 	//ADCA
-	//AdcaRegs.ADCSOC0CTL.bit.CHSEL = ???; //SOC0 will convert Channel you choose Does not have to be A0
-	//AdcaRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-	//AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = ???;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
-	//AdcaRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be A1
-	//AdcaRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-	//AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = ???;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
-	//AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = ???; //set to last SOC that is converted and it will set INT1 flag ADCA1
-	//AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
-	//AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+	AdcaRegs.ADCSOC0CTL.bit.CHSEL = 2; //SOC0 will convert Channel you choose Does not have to be A0
+	AdcaRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+	AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3; //SOC1 will convert Channel you choose Does not have to be A1
+	AdcaRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+	AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //set to last SOC that is converted and it will set INT1 flag ADCA1
+	AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+	AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 	//ADCB
-	//AdcbRegs.ADCSOC0CTL.bit.CHSEL = ???; //SOC0 will convert Channel you choose Does not have to be B0
-	//AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-	//AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
-	//AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
-	//AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-	//AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
-	//AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
-	//AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-	//AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
-	//AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
-	//AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-	//AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
-	//AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = ???; //set to last SOC that is converted and it will set INT1 flag ADCB1
-	//AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
-	//AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+	AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
+	AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+//	AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
+//	AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//	AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+//	AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
+//	AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//	AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
+//	AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
+//	AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//	AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
+	AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
+	AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+	AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 
 	//ADCD
 	AdcdRegs.ADCSOC0CTL.bit.CHSEL = 0; // set SOC0 to convert pin D0
@@ -458,8 +700,10 @@ void main(void)
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
 	// Enable SWI in the PIE: Group 12 interrupt 9
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
-    PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
-	
+    //PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
+//    PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
+    PieCtrlRegs.PIEIER1.bit.INTx2 = 1;
+
 	init_serialSCIC(&SerialC,115200);
 	init_serialSCID(&SerialD,115200);
     // Enable global Interrupts and higher priority real-time debug events
@@ -473,7 +717,8 @@ void main(void)
         if (UARTPrint == 1 ) {
 			//serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
             //serial_printf(&SerialA,"ADCD0 voltage= %.3f\r\n", volts0);
-            serial_printf(&SerialA,"ADCD0 voltage= %.3f ADCD1 voltage= %.3f\r\n", xk, volts1);
+//            serial_printf(&SerialA,"ADCD0 voltage= %.3f ADCD1 voltage= %.3f\r\n", xk, volts1);
+            serial_printf(&SerialA,"filter value 2= %.3f filter value 1= %.3f\r\n",  yka2, yka3);
             UARTPrint = 0;
         }
     }
