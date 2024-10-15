@@ -1,7 +1,7 @@
 //#############################################################################
-// FILE:   LABstarter_main.c
+// FILE:   LAB4_main.c
 //
-// TITLE:  Lab Starter
+// TITLE:  Lab 4
 //#############################################################################
 
 // Included Files
@@ -39,6 +39,7 @@ uint32_t numSWIcalls = 0;
 extern uint32_t numRXA;
 uint16_t UARTPrint = 0;
 uint16_t LEDdisplaynum = 0;
+// global variable use for lab4
 int16_t adcd0result =0;
 int16_t adcd1result =0;
 int16_t adca2result =0;
@@ -60,8 +61,10 @@ float ykb1=0;
 //Example code
 //float myu = 2.25;
 //setDACA(myu); // DACA will now output 2.25 Volts
+//JS DAC output functions
 void setDACA(float dacouta0) {
     int16_t DACOutInt = 0;
+    //JS divided by the resolution to scale volts to 0-4095
     DACOutInt = (dacouta0/3.0)*4096.0; // perform scaling of 0 – almost 3V to 0 - 4095
     if (DACOutInt > 4095) DACOutInt = 4095;
     if (DACOutInt < 0) DACOutInt = 0;
@@ -69,6 +72,7 @@ void setDACA(float dacouta0) {
 }
 void setDACB(float dacouta1) {
     int16_t DACOutInt = 0;
+    //JS divided by the resolution to scale volts to 0-4095
     DACOutInt = (dacouta1/3.0)*4096.0; // perform scaling of 0 – almost 3V to 0 - 4095
     if (DACOutInt > 4095) DACOutInt = 4095;
     if (DACOutInt < 0) DACOutInt = 0;
@@ -84,6 +88,7 @@ float xk_4 = 0;
 //yk is the filtered value
 float yk = 0;
 //b is the filter coefficients
+//JS defined b arrays, using values from matlab
 //float b[5] = {3.3833240118424500e-02,
 //              2.4012702387971543e-01,
 //              4.5207947200372001e-01,
@@ -254,7 +259,7 @@ float b[101]={  -2.9880028485706014e-18,
     1.0014161157911048e-04,
     -2.9880028485706014e-18};
 
-
+//JS define arrays use to calculate filter signals
 float volts1 = 0.0;
 float xkarray[22]={};
 float xka2array[22]={};
@@ -265,14 +270,22 @@ __interrupt void ADCD_ISR (void) {
     adcd0result = AdcdResultRegs.ADCRESULT0;
     adcd1result = AdcdResultRegs.ADCRESULT1;
     // Here covert ADCIND0, ADCIND1 to volts
+    //JS convert to volts by multiply by resolution
     xk = (adcd0result/4096.0)*3.0;
+    //JS convert to volts by multiply by resolution
     volts1 = (adcd1result/4096.0)*3.0;
+    //JS set yk back to 0, avoid keeping on adding
     yk = 0;
+    //JS implement a for loop to use previous xk state
     for (int i = 21; i>0; i--){
+        //JS set xk values from the previous index xk values
         xkarray[i]=xkarray[i-1];
+        //JS sum xk values * filter coefficients except the first value of array
         yk += xkarray[i]*b[i];
     }
+    //JS set the first array value to xk
     xkarray[0]=xk;
+    //JS add 1st xk value*the first filter coefficient
     yk += xkarray[0]*b[0];
     //yk = b[0]*xk + b[1]*xk_1 + b[2]*xk_2 + b[3]*xk_3 + b[4]*xk_4;
 
@@ -284,7 +297,9 @@ __interrupt void ADCD_ISR (void) {
     // Here write yk to DACA channel
     setDACA(yk);
     // Print ADCIND0 and ADCIND1’s voltage value to TeraTerm every 100ms
+    //JS increase ADCD1count with 1ms
     ADCD1count++;
+    //JS print to TeraTerm with 100ms
     if (ADCD1count % 100 == 0){
         UARTPrint = 1;
     }
@@ -296,7 +311,7 @@ __interrupt void ADCD_ISR (void) {
 __interrupt void ADCA_ISR (void) {
     adca2result = AdcaResultRegs.ADCRESULT0;
     adca3result = AdcaResultRegs.ADCRESULT1;
-    //
+    //JS similar to ADCD, but uses two xkarrays and yks,  two signals input in filter
     xka2 = (adca2result/4096.0)*3.0;
     xka3 = (adca3result/4096.0)*3.0;
     yka2 = 0;
@@ -324,7 +339,9 @@ __interrupt void ADCA_ISR (void) {
 }
 
 __interrupt void ADCB_ISR (void) {
+    //JS set GPIO52 as an output
     GpioDataRegs.GPBSET.bit.GPIO52 = 1;
+    //JS similar to ADCD, but use 100 th order FIR filter
     adcb1result = AdcbResultRegs.ADCRESULT0;
     xkb1 = (adcb1result/4096.0)*3.0;
     ykb1 = 0;
@@ -335,6 +352,7 @@ __interrupt void ADCB_ISR (void) {
     xkb1array[0]=xkb1;
     ykb1 += xkb1array[0]*b[0];
     // Here write yk to DACA channel
+    //JS add 1.5 oscilloscope offset
     setDACA(ykb1+1.5);
 //
     // Print  voltage value to TeraTerm every 100ms
@@ -344,26 +362,9 @@ __interrupt void ADCB_ISR (void) {
     }
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+    //JS turn off GPIO52
     GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
 }
-
-
-////adcd1 pie interrupt
-//__interrupt void ADCD_ISR (void) {
-//    adcd0result = AdcdResultRegs.ADCRESULT0;
-//    adcd1result = AdcdResultRegs.ADCRESULT1;
-//    // Here covert ADCIND0 to volts
-//    volts0 = (adcd0result/4096.0)*3.0;
-//    // Here write voltages value to DACA
-//    setDACA(volts0);
-//    // Print ADCIND0’s voltage value to TeraTerm every 100ms
-//    ADCD1count++;
-//    if (ADCD1count % 100 == 0){
-//        UARTPrint = 1;
-//    }
-//    AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
-//    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
-//}
 
 void main(void)
 {
@@ -555,8 +556,11 @@ void main(void)
     PieVectTable.TIMER0_INT = &cpu_timer0_isr;
     PieVectTable.TIMER1_INT = &cpu_timer1_isr;
     PieVectTable.TIMER2_INT = &cpu_timer2_isr;
+    //JS for ADCD to call the memory address of ADCD_ISR
 //    PieVectTable.ADCD1_INT = &ADCD_ISR;
+    //JS for ADCA to call the memory address of ADCA_ISR
 //    PieVectTable.ADCA1_INT = &ADCA_ISR;
+    //JS for ADCB to call the memory address of ADCB_ISR
     PieVectTable.ADCB1_INT = &ADCB_ISR;
     PieVectTable.SCIA_RX_INT = &RXAINT_recv_ready;
     PieVectTable.SCIB_RX_INT = &RXBINT_recv_ready;
@@ -591,17 +595,22 @@ void main(void)
 	EALLOW;
 	EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
 	EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
+	//JS only bit 1 is high,Enable event time-base counter equal to period
 	EPwm5Regs.ETSEL.bit.SOCASEL = 2; // Select Event when counter equal to PRD
+	//JS when only bit 0 is hig, Generate the EPWM5SOCA pulse on the first event
 	EPwm5Regs.ETPS.bit.SOCAPRD = 1; // Generate pulse on 1st event (“pulse” is the same as “trigger”)
 	EPwm5Regs.TBCTR = 0x0; // Clear counter
 	EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
 	EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
 	EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
+	//JS for exerise 1, set period to 1ms 50MHz * 0.001s
 //	EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
+	//
 //	EPwm5Regs.TBPRD = 12500;
     EPwm5Regs.TBPRD = 5000;
 	// Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
 	EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
+	//JS up-count mode, set it to 0
 	EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
 	EDIS;
 
@@ -630,18 +639,25 @@ void main(void)
 	//Select the channels to convert and end of conversion flag
 	//Many statements commented out, To be used when using ADCA or ADCB
 	//ADCA
+	//JS set SOC0 to pin2
 	AdcaRegs.ADCSOC0CTL.bit.CHSEL = 2; //SOC0 will convert Channel you choose Does not have to be A0
 	AdcaRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	//JS EPWM5 ADCSOCA is 13
 	AdcaRegs.ADCSOC0CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+	//JS set SOC1 to pin3
 	AdcaRegs.ADCSOC1CTL.bit.CHSEL = 3; //SOC1 will convert Channel you choose Does not have to be A1
 	AdcaRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	//JS EPWM5 ADCSOCA is 13
 	AdcaRegs.ADCSOC1CTL.bit.TRIGSEL = 13;// EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+	//JS set to the last converted SOC1
 	AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //set to last SOC that is converted and it will set INT1 flag ADCA1
 	AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
 	AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 	//ADCB
+	//JS set SOC0 to pin4
 	AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
 	AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	//JS EPWM5 ADCSOCA is 13
 	AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
 //	AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
 //	AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
@@ -652,16 +668,22 @@ void main(void)
 //	AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
 //	AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
 //	AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
+	//JS set to the last converted SOC0
 	AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
 	AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
 	AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 
 	//ADCD
+	//JS use only SOC0 and SOC1 for ADCD
+	//JS set SOC0 to pin0
 	AdcdRegs.ADCSOC0CTL.bit.CHSEL = 0; // set SOC0 to convert pin D0
 	AdcdRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	//JS EPWM5 ADCSOCA is 13
 	AdcdRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA will trigger SOC0
+	//JS set SOC1 to pin1
 	AdcdRegs.ADCSOC1CTL.bit.CHSEL = 1; //set SOC1 to convert pin D1
 	AdcdRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+	//JS EPWM5 ADCSOCA is 13
 	AdcdRegs.ADCSOC1CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA will trigger SOC1
 	//AdcdRegs.ADCSOC2CTL.bit.CHSEL = ???; //set SOC2 to convert pin D2
 	//AdcdRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
@@ -669,11 +691,13 @@ void main(void)
 	//AdcdRegs.ADCSOC3CTL.bit.CHSEL = ???; //set SOC3 to convert pin D3
 	//AdcdRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
 	//AdcdRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA will trigger SOC3
+	//JS set to the last converted SOC1
 	AdcdRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //set to SOC1, the last converted, and it will set INT1 flag ADCD1
 	AdcdRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
 	AdcdRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 	EDIS;
 
+	//JS initialize the DACs copied from guideline
 	// Enable DACA and DACB outputs
 	EALLOW;
 	DacaRegs.DACOUTEN.bit.DACOUTEN = 1; //enable dacA output-->uses ADCINA0
@@ -700,8 +724,11 @@ void main(void)
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
 	// Enable SWI in the PIE: Group 12 interrupt 9
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
+    //JS Enable ADCD1 in the PIE: Group 1 interrupt 6
     //PieCtrlRegs.PIEIER1.bit.INTx6 = 1;
+    //JS Enable ADCA1 in the PIE: Group 1 interrupt 1
 //    PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
+    //JS Enable ADCB1 in the PIE: Group 1 interrupt 2
     PieCtrlRegs.PIEIER1.bit.INTx2 = 1;
 
 	init_serialSCIC(&SerialC,115200);
@@ -716,9 +743,12 @@ void main(void)
     {
         if (UARTPrint == 1 ) {
 			//serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
+            //JS print ADCD0 volt to TeraTerm
             //serial_printf(&SerialA,"ADCD0 voltage= %.3f\r\n", volts0);
+            //JS print filter ADCD0 and ADCD1 to TeraTerm
 //            serial_printf(&SerialA,"ADCD0 voltage= %.3f ADCD1 voltage= %.3f\r\n", xk, volts1);
-            serial_printf(&SerialA,"filter value 2= %.3f filter value 1= %.3f\r\n",  yka2, yka3);
+            //JS print filter values from pin2 and pin3
+            serial_printf(&SerialA,"filter value 2= %.3f filter value 3= %.3f\r\n",  yka2, yka3);
             UARTPrint = 0;
         }
     }
