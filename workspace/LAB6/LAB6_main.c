@@ -109,6 +109,23 @@ float x_1dot= 0.0;
 float y_1 =0.0;
 float y_1dot=0.0;
 
+float distright =0.0;
+float distfront =0.0;
+float distright_1 = 0.0;
+float distfront_1 =0.0;
+float kprt = 0.002;
+float kpft =0.0002;
+float refrt =200;
+float refft =1400;
+float threshold1=0.2;
+float threshold2=0.5;
+float rtwallfollow =0.0;
+
+
+float xkb1 =0;
+float ykb1=0;
+float adcb1result =0;
+int32_t ADCB1count =0;
 
 float printLV3 = 0;
 float printLV4 = 0;
@@ -201,7 +218,109 @@ EQep2Regs.QPOSCNT = 0;
 EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
 }
 
+float b[101]={  -2.9880028485706014e-18,
+    1.0014161157911048e-04,
+    -5.2618551547237234e-04,
+    -7.7962413218288327e-04,
+    3.8326299947443642e-04,
+    1.4468607075027277e-03,
+    4.7641201701853882e-04,
+    -1.1966077184856539e-03,
+    -9.8442612457462801e-04,
+    2.2426543490299702e-04,
+    -1.3055511470703196e-18,
+    -2.8856900257159991e-04,
+    1.6267183735412948e-03,
+    2.5290719210008640e-03,
+    -1.2795608153376812e-03,
+    -4.8925823855322497e-03,
+    -1.6113987990414897e-03,
+    4.0107106316287265e-03,
+    3.2480258555224279e-03,
+    -7.2516689926356299e-04,
+    1.8056386897280851e-17,
+    8.9007602241939149e-04,
+    -4.8948933522602461e-03,
+    -7.4262043229105694e-03,
+    3.6693671696644108e-03,
+    1.3718600126208420e-02,
+    4.4244260206582689e-03,
+    -1.0801717429888814e-02,
+    -8.5964585113028728e-03,
+    1.8899182131726397e-03,
+    -5.3057330072547164e-18,
+    -2.2642270131377727e-03,
+    1.2346792985290733e-02,
+    1.8623150986016437e-02,
+    -9.1751382337289834e-03,
+    -3.4312641521119479e-02,
+    -1.1108970111065547e-02,
+    2.7336258194538145e-02,
+    2.2030316909781834e-02,
+    -4.9314814569541088e-03,
+    7.0946687196014922e-18,
+    6.2561782550849951e-03,
+    -3.5604150484977087e-02,
+    -5.6784697958734962e-02,
+    3.0104607026376420e-02,
+    1.2416425489455964e-01,
+    4.5989918232812586e-02,
+    -1.3743489446447751e-01,
+    -1.5046109818463846e-01,
+    6.0593548159411273e-02,
+    1.9952895080570546e-01,
+    6.0593548159411273e-02,
+    -1.5046109818463846e-01,
+    -1.3743489446447751e-01,
+    4.5989918232812586e-02,
+    1.2416425489455964e-01,
+    3.0104607026376420e-02,
+    -5.6784697958734962e-02,
+    -3.5604150484977087e-02,
+    6.2561782550849951e-03,
+    7.0946687196014922e-18,
+    -4.9314814569541088e-03,
+    2.2030316909781834e-02,
+    2.7336258194538145e-02,
+    -1.1108970111065547e-02,
+    -3.4312641521119479e-02,
+    -9.1751382337289834e-03,
+    1.8623150986016437e-02,
+    1.2346792985290733e-02,
+    -2.2642270131377727e-03,
+    -5.3057330072547164e-18,
+    1.8899182131726397e-03,
+    -8.5964585113028728e-03,
+    -1.0801717429888814e-02,
+    4.4244260206582689e-03,
+    1.3718600126208420e-02,
+    3.6693671696644108e-03,
+    -7.4262043229105694e-03,
+    -4.8948933522602461e-03,
+    8.9007602241939149e-04,
+    1.8056386897280851e-17,
+    -7.2516689926356299e-04,
+    3.2480258555224279e-03,
+    4.0107106316287265e-03,
+    -1.6113987990414897e-03,
+    -4.8925823855322497e-03,
+    -1.2795608153376812e-03,
+    2.5290719210008640e-03,
+    1.6267183735412948e-03,
+    -2.8856900257159991e-04,
+    -1.3055511470703196e-18,
+    2.2426543490299702e-04,
+    -9.8442612457462801e-04,
+    -1.1966077184856539e-03,
+    4.7641201701853882e-04,
+    1.4468607075027277e-03,
+    3.8326299947443642e-04,
+    -7.7962413218288327e-04,
+    -5.2618551547237234e-04,
+    1.0014161157911048e-04,
+    -2.9880028485706014e-18};
 
+float xkb1array[101]={};
 
 float readEncLeft(void) {
 int32_t raw = 0;
@@ -249,6 +368,34 @@ void setEPWM2B(float controleffort){
     }
     //JS control duty cycle to 0% when controleffort is -10, 50% when controleffort is 0, 100% when controleffort is 10, converts controleffort value between -10 and 10 to duty cycle 0% to 100%
     EPwm2Regs.CMPB.bit.CMPB = ((controleffort + (float)10))/ ((float)20)* EPwm2Regs.TBPRD;
+}
+
+__interrupt void ADCB_ISR (void) {
+    //JS set GPIO52 as an output
+    GpioDataRegs.GPBSET.bit.GPIO52 = 1;
+    //JS similar to ADCD, but use 100 th order FIR filter
+    adcb1result = AdcbResultRegs.ADCRESULT0;
+    xkb1 = (adcb1result/4096.0)*3.0;
+    ykb1 = 0;
+    for (int i = 100; i>0; i--){
+        xkb1array[i]=xkb1array[i-1];
+        ykb1 += xkb1array[i]*b[i];
+    }
+    xkb1array[0]=xkb1;
+    ykb1 += xkb1array[0]*b[0];
+    // Here write yk to DACA channel
+//    //JS add 1.5 oscilloscope offset
+//    setDACA(ykb1+1.5);
+//
+    // Print  voltage value to TeraTerm every 100ms
+    ADCB1count++;
+    if (ADCB1count % 100 == 0){
+        UARTPrint = 1;
+    }
+    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+    //JS turn off GPIO52
+    GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
 }
 
 void main(void)
@@ -476,6 +623,8 @@ void main(void)
     PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
     PieVectTable.SPIB_RX_INT = &SPIB_isr;
 
+    PieVectTable.ADCB1_INT = &ADCB_ISR;
+
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
     // ----- code for CAN start here -----
     PieVectTable.CANB0_INT = &can_isr;
@@ -500,7 +649,14 @@ void main(void)
 
 	init_serialSCIA(&SerialA,115200);
     setupSpib();
-	
+
+    EALLOW;
+//    EPwm2Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
+//    EPwm2Regs.TBCTL.bit.CTRMODE = 3;
+//    EPwm2Regs.ETSEL.bit.SOCASEL = 2;
+//    EPwm2Regs.ETPS.bit.SOCAPRD = 1;
+//    EPwm2Regs.ETSEL.bit.SOCAEN = 1;
+
     EPwm2Regs.TBCTL.bit.CTRMODE = 0;
     EPwm2Regs.TBCTL.bit.FREE_SOFT = 2;
     EPwm2Regs.TBCTL.bit.PHSEN = 0;
@@ -518,6 +674,48 @@ void main(void)
     EPwm2Regs.AQCTLB.bit.ZRO = 2;
     EPwm2Regs.TBPHS.bit.TBPHS = 0;
 
+
+    EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
+    EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
+    //JS only bit 1 is high,Enable event time-base counter equal to period
+    EPwm5Regs.ETSEL.bit.SOCASEL = 2; // Select Event when counter equal to PRD
+    //JS when only bit 0 is hig, Generate the EPWM5SOCA pulse on the first event
+    EPwm5Regs.ETPS.bit.SOCAPRD = 1; // Generate pulse on 1st event (“pulse” is the same as “trigger”)
+    EPwm5Regs.TBCTR = 0x0; // Clear counter
+    EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
+    EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
+    EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
+    //JS for exerise 1, set period to 1ms 50MHz * 0.001s
+//  EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
+    //
+//  EPwm5Regs.TBPRD = 12500;
+    EPwm5Regs.TBPRD = 5000;
+    // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
+    EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
+    //JS up-count mode, set it to 0
+    EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
+    EDIS;
+
+//    //ADCB
+//    //JS set SOC0 to pin4
+//    AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
+//    AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//    //JS EPWM5 ADCSOCA is 13
+//    AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+////  AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
+////  AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+////  AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+////  AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
+////  AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+////  AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
+////  AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
+////  AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+////  AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
+//    //JS set to the last converted SOC0
+//    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
+//    AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+//    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+
     // Enable CPU int1 which is connected to CPU-Timer 0, CPU int13
     // which is connected to CPU-Timer 1, and CPU int 14, which is connected
     // to CPU-Timer 2:  int 12 is for the SWI.  
@@ -531,13 +729,16 @@ void main(void)
 
     // Enable TINT0 in the PIE: Group 1 interrupt 7
     PieCtrlRegs.PIEIER1.bit.INTx7 = 1;
-	// Enable SWI in the PIE: Group 12 interrupt 9
+    // Enable SWI in the PIE: Group 12 interrupt 9
     PieCtrlRegs.PIEIER12.bit.INTx9 = 1;
-	PieCtrlRegs.PIEIER6.bit.INTx3 = 1;  //SPiB
+    PieCtrlRegs.PIEIER6.bit.INTx3 = 1;  //SPiB
     // ----- code for CAN start here -----
     // Enable CANB in the PIE: Group 9 interrupt 7
     PieCtrlRegs.PIEIER9.bit.INTx7 = 1;
     // ----- code for CAN end here -----
+
+    //JS Enable ADCB1 in the PIE: Group 1 interrupt 2
+    PieCtrlRegs.PIEIER1.bit.INTx2 = 1;
 
     // ----- code for CAN start here -----
     // Enable the CAN interrupt signal
@@ -787,7 +988,43 @@ __interrupt void cpu_timer0_isr(void)
     yrdot = radius*beavgdot*sin(bearing);
     x = x_1+(0.004*(xrdot+x_1dot)/2);
     y = y_1+(0.004*(yrdot+y_1dot)/2);
+    x_1 = x;
+    y_1 = y;
 
+
+    if (measure_status_1 == 0) {
+        distright = dis_1;
+    } else {
+        distright = 1400; // set to max reading if error
+    }
+    if (measure_status_3 == 0) {
+        distfront = dis_3;
+    } else {
+        distfront = 1400; // set to max reading if error
+    }
+
+
+
+    if (rtwallfollow==1){
+        turn = kprt *(refrt-distright);
+        vref=0.25;
+        if (distfront <threshold1){
+            rtwallfollow =0;
+        }
+        if (ykb1>1500 & ykb1<2500){
+            vref=0;
+        }
+    }
+    else{
+        turn = kpft *(refft-distfront);
+        vref=0.25;
+        if(distfront>threshold2){
+            rtwallfollow =1;
+        }
+    }
+
+    distright_1 =distright;
+    distfront_1 = distfront;
 
 
     if ((numTimer0calls%250) == 0) {
