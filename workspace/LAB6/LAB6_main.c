@@ -113,12 +113,12 @@ float distright =0.0;
 float distfront =0.0;
 float distright_1 = 0.0;
 float distfront_1 =0.0;
-float kprt = 0.002;
-float kpft =0.0002;
-float refrt =200;
+float kprt = 0.0015;
+float kpft =0.0005;
+float refrt =300;
 float refft =1400;
-float threshold1=0.2;
-float threshold2=0.5;
+float threshold1=300;
+float threshold2=500;
 float rtwallfollow =0.0;
 
 
@@ -175,49 +175,50 @@ uint32_t measure_status_3 = 0;
 
 volatile uint32_t errorFlag = 0;
 // ----- code for CAN end here -----
+//JS copy from the guideline
 void init_eQEPs(void) {
-// setup eQEP1 pins for input
-EALLOW;
-//Disable internal pull-up for the selected output pins for reduced power consumption
-GpioCtrlRegs.GPAPUD.bit.GPIO20 = 1; // Disable pull-up on GPIO20 (EQEP1A)
-GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1; // Disable pull-up on GPIO21 (EQEP1B)
-GpioCtrlRegs.GPAQSEL2.bit.GPIO20 = 2; // Qual every 6 samples
-GpioCtrlRegs.GPAQSEL2.bit.GPIO21 = 2; // Qual every 6 samples
-EDIS;
-// This specifies which of the possible GPIO pins will be EQEP1 functional pins.
-// Comment out other unwanted lines.
-GPIO_SetupPinMux(20, GPIO_MUX_CPU1, 1);
-GPIO_SetupPinMux(21, GPIO_MUX_CPU1, 1);
-EQep1Regs.QEPCTL.bit.QPEN = 0; // make sure eqep in reset
-EQep1Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
-EQep1Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
-EQep1Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
-EQep1Regs.QEINT.all = 0x0; // Disable all eQep interrupts
-EQep1Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count
-EQep1Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend in Code Composer
-EQep1Regs.QPOSCNT = 0;
-EQep1Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
-// setup QEP2 pins for input
-EALLOW;
-//Disable internal pull-up for the selected output pinsfor reduced power consumption
-GpioCtrlRegs.GPBPUD.bit.GPIO54 = 1; // Disable pull-up on GPIO54 (EQEP2A)
-GpioCtrlRegs.GPBPUD.bit.GPIO55 = 1; // Disable pull-up on GPIO55 (EQEP2B)
-GpioCtrlRegs.GPBQSEL2.bit.GPIO54 = 2; // Qual every 6 samples
-GpioCtrlRegs.GPBQSEL2.bit.GPIO55 = 2; // Qual every 6 samples
-EDIS;
-GPIO_SetupPinMux(54, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2A
-GPIO_SetupPinMux(55, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2B
-EQep2Regs.QEPCTL.bit.QPEN = 0; // make sure qep reset
-EQep2Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
-EQep2Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
-EQep2Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
-EQep2Regs.QEINT.all = 0x0; // Disable all eQep interrupts
-EQep2Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count.
-EQep2Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend
-EQep2Regs.QPOSCNT = 0;
-EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
+    // setup eQEP1 pins for input
+    EALLOW;
+    //Disable internal pull-up for the selected output pins for reduced power consumption
+    GpioCtrlRegs.GPAPUD.bit.GPIO20 = 1; // Disable pull-up on GPIO20 (EQEP1A)
+    GpioCtrlRegs.GPAPUD.bit.GPIO21 = 1; // Disable pull-up on GPIO21 (EQEP1B)
+    GpioCtrlRegs.GPAQSEL2.bit.GPIO20 = 2; // Qual every 6 samples
+    GpioCtrlRegs.GPAQSEL2.bit.GPIO21 = 2; // Qual every 6 samples
+    EDIS;
+    // This specifies which of the possible GPIO pins will be EQEP1 functional pins.
+    // Comment out other unwanted lines.
+    GPIO_SetupPinMux(20, GPIO_MUX_CPU1, 1);
+    GPIO_SetupPinMux(21, GPIO_MUX_CPU1, 1);
+    EQep1Regs.QEPCTL.bit.QPEN = 0; // make sure eqep in reset
+    EQep1Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
+    EQep1Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
+    EQep1Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
+    EQep1Regs.QEINT.all = 0x0; // Disable all eQep interrupts
+    EQep1Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count
+    EQep1Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend in Code Composer
+    EQep1Regs.QPOSCNT = 0;
+    EQep1Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
+    // setup QEP2 pins for input
+    EALLOW;
+    //Disable internal pull-up for the selected output pinsfor reduced power consumption
+    GpioCtrlRegs.GPBPUD.bit.GPIO54 = 1; // Disable pull-up on GPIO54 (EQEP2A)
+    GpioCtrlRegs.GPBPUD.bit.GPIO55 = 1; // Disable pull-up on GPIO55 (EQEP2B)
+    GpioCtrlRegs.GPBQSEL2.bit.GPIO54 = 2; // Qual every 6 samples
+    GpioCtrlRegs.GPBQSEL2.bit.GPIO55 = 2; // Qual every 6 samples
+    EDIS;
+    GPIO_SetupPinMux(54, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2A
+    GPIO_SetupPinMux(55, GPIO_MUX_CPU1, 5); // set GPIO54 and eQep2B
+    EQep2Regs.QEPCTL.bit.QPEN = 0; // make sure qep reset
+    EQep2Regs.QDECCTL.bit.QSRC = 0; // Quadrature count mode
+    EQep2Regs.QPOSCTL.all = 0x0; // Disable eQep Position Compare
+    EQep2Regs.QCAPCTL.all = 0x0; // Disable eQep Capture
+    EQep2Regs.QEINT.all = 0x0; // Disable all eQep interrupts
+    EQep2Regs.QPOSMAX = 0xFFFFFFFF; // use full range of the 32 bit count.
+    EQep2Regs.QEPCTL.bit.FREE_SOFT = 2; // EQep uneffected by emulation suspend
+    EQep2Regs.QPOSCNT = 0;
+    EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
 }
-
+//JS JS defined b array, using values from matlab to filter signal using FIR
 float b[101]={  -2.9880028485706014e-18,
     1.0014161157911048e-04,
     -5.2618551547237234e-04,
@@ -319,39 +320,39 @@ float b[101]={  -2.9880028485706014e-18,
     -5.2618551547237234e-04,
     1.0014161157911048e-04,
     -2.9880028485706014e-18};
-
+//JS define array use to calculate filter signals
 float xkb1array[101]={};
-
+//JS copy from guideline
 float readEncLeft(void) {
-int32_t raw = 0;
-uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U
-raw = EQep1Regs.QPOSCNT;
-if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
-// 100 slits in the encoder disk so 100 square waves per one revolution of the
-// DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
-// of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-return (-raw*(2*PI/(30*400)));
+    int32_t raw = 0;
+    uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U
+    raw = EQep1Regs.QPOSCNT;
+    if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
+    // 100 slits in the encoder disk so 100 square waves per one revolution of the
+    // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
+    // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
+    //JS the number of radians the wheel turn 400 counts per wheel revolution * 30 motor rotations
+    return (raw*(2*PI/(30*400)));
 }
 float readEncRight(void) {
-int32_t raw = 0;
-uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U -1 32bit signed int
-raw = EQep2Regs.QPOSCNT;
-if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
-// 100 slits in the encoder disk so 100 square waves per one revolution of the
-// DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
-// of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
-return (raw*(2*PI/(30*400)));
+    int32_t raw = 0;
+    uint32_t QEP_maxvalue = 0xFFFFFFFFU; //4294967295U -1 32bit signed int
+    raw = EQep2Regs.QPOSCNT;
+    if (raw >= QEP_maxvalue/2) raw -= QEP_maxvalue; // I don't think this is needed and never true
+    // 100 slits in the encoder disk so 100 square waves per one revolution of the
+    // DC motor's back shaft. Then Quadrature Decoder mode multiplies this by 4 so 400 counts per one rev
+    // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
+    return (raw*(2*PI/(30*400)));
 }
-
+//JS create function setEPWM2A
+//JS saturate controleffort between -10 to 10 for right motor
 void setEPWM2A(float controleffort)
 {
     if (controleffort > 10){
         controleffort = 10;
-//        Irtk = Irtk_1*0.95;
     }
     if (controleffort < -10){
         controleffort = -10;
-//        Irtk = Irtk_1*0.95;
     }
     //JS control duty cycle to 0% when controleffort is -10, 50% when controleffort is 0, 100% when controleffort is 10, converts controleffort value between -10 and 10 to duty cycle 0% to 100%
     EPwm2Regs.CMPA.bit.CMPA = ((controleffort + (float)10))/ ((float)20)* EPwm2Regs.TBPRD;
@@ -360,16 +361,14 @@ void setEPWM2A(float controleffort)
 void setEPWM2B(float controleffort){
     if (controleffort > 10){
         controleffort = 10;
-//        Ileftk = Ileftk_1*0.95;
     }
     if (controleffort < -10){
         controleffort = -10;
-//        Ileftk = Ileftk_1*0.95;
     }
     //JS control duty cycle to 0% when controleffort is -10, 50% when controleffort is 0, 100% when controleffort is 10, converts controleffort value between -10 and 10 to duty cycle 0% to 100%
     EPwm2Regs.CMPB.bit.CMPB = ((controleffort + (float)10))/ ((float)20)* EPwm2Regs.TBPRD;
 }
-
+//JS add interrupt function for ADCB for microphone use
 __interrupt void ADCB_ISR (void) {
     //JS set GPIO52 as an output
     GpioDataRegs.GPBSET.bit.GPIO52 = 1;
@@ -383,15 +382,6 @@ __interrupt void ADCB_ISR (void) {
     }
     xkb1array[0]=xkb1;
     ykb1 += xkb1array[0]*b[0];
-    // Here write yk to DACA channel
-//    //JS add 1.5 oscilloscope offset
-//    setDACA(ykb1+1.5);
-//
-    // Print  voltage value to TeraTerm every 100ms
-    ADCB1count++;
-    if (ADCB1count % 100 == 0){
-        UARTPrint = 1;
-    }
     AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
     //JS turn off GPIO52
@@ -622,7 +612,7 @@ void main(void)
     PieVectTable.SCIC_TX_INT = &TXCINT_data_sent;
     PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
     PieVectTable.SPIB_RX_INT = &SPIB_isr;
-
+    //JS for ADCB to call the memory address of ADCB_ISR
     PieVectTable.ADCB1_INT = &ADCB_ISR;
 
     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
@@ -650,19 +640,19 @@ void main(void)
 	init_serialSCIA(&SerialA,115200);
     setupSpib();
 
-    EALLOW;
-//    EPwm2Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
-//    EPwm2Regs.TBCTL.bit.CTRMODE = 3;
-//    EPwm2Regs.ETSEL.bit.SOCASEL = 2;
-//    EPwm2Regs.ETPS.bit.SOCAPRD = 1;
-//    EPwm2Regs.ETSEL.bit.SOCAEN = 1;
-
+    //JS Count up Mode bit is 00
     EPwm2Regs.TBCTL.bit.CTRMODE = 0;
+    //JS 2/3 free run bit is 1x, 10 or 11
     EPwm2Regs.TBCTL.bit.FREE_SOFT = 2;
+    //JS disable the phase loading bit is 0
     EPwm2Regs.TBCTL.bit.PHSEN = 0;
+    //JS CLKDIV is 1, 2 to the power of 0
     EPwm2Regs.TBCTL.bit.CLKDIV = 0;
+    //JS Start the timer at 0
     EPwm2Regs.TBCTR = 0;
+    //JS Signal needs to be 20KHz, to have a period of 50 microseconds, TBPRD value get divided by carrier frequency
     EPwm2Regs.TBPRD = 2500;
+    //JS 0%*TBPRD for duty cycle
     EPwm2Regs.CMPA.bit.CMPA = 0;
     //JS needs CMPB for EPWM2B
     EPwm2Regs.CMPB.bit.CMPB = 0;
@@ -674,7 +664,8 @@ void main(void)
     EPwm2Regs.AQCTLB.bit.ZRO = 2;
     EPwm2Regs.TBPHS.bit.TBPHS = 0;
 
-
+    //JS EPWM5 and ADCB for setup microphone
+    EALLOW;
     EPwm5Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
     EPwm5Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
     //JS only bit 1 is high,Enable event time-base counter equal to period
@@ -685,10 +676,6 @@ void main(void)
     EPwm5Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
     EPwm5Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
     EPwm5Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
-    //JS for exerise 1, set period to 1ms 50MHz * 0.001s
-//  EPwm5Regs.TBPRD = 50000; // Set Period to 1ms sample. Input clock is 50MHz.
-    //
-//  EPwm5Regs.TBPRD = 12500;
     EPwm5Regs.TBPRD = 5000;
     // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
     EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
@@ -696,25 +683,41 @@ void main(void)
     EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
     EDIS;
 
-//    //ADCB
-//    //JS set SOC0 to pin4
-//    AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
-//    AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-//    //JS EPWM5 ADCSOCA is 13
-//    AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
-////  AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
-////  AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-////  AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
-////  AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
-////  AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-////  AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
-////  AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
-////  AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-////  AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
-//    //JS set to the last converted SOC0
-//    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
-//    AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
-//    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+
+    EALLOW;
+    //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
+
+    AdcbRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+
+    //Set pulse positions to late
+    AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    //power up the ADCs
+    AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    DELAY_US(1000);
+
+
+
+    //ADCB
+    //JS set SOC0 to pin4
+    AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
+    AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    //JS EPWM5 ADCSOCA is 13
+    AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 13; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+//  AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
+//  AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//  AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+//  AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
+//  AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//  AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
+//  AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
+//  AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+//  AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
+    //JS set to the last converted SOC0
+    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
+    AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+    EDIS;
 
     // Enable CPU int1 which is connected to CPU-Timer 0, CPU int13
     // which is connected to CPU-Timer 1, and CPU int 14, which is connected
@@ -903,7 +906,7 @@ __interrupt void cpu_timer0_isr(void)
     CpuTimer0.InterruptCount++;
 
     numTimer0calls++;
-
+    //JS copy from the guideline to communicate with Labview
     if (NewLVData == 1) {
         NewLVData = 0;
         vref = fromLVvalues[0];
@@ -938,13 +941,14 @@ __interrupt void cpu_timer0_isr(void)
 //    if ((numTimer0calls%50) == 0) {
 //        PieCtrlRegs.PIEIFR12.bit.INTx9 = 1;  // Manually cause the interrupt for the SWI
 //    }
-    LeftWheel = readEncLeft();
+    //JS angular position of wheels
+    LeftWheel = -readEncLeft();
     RightWheel = readEncRight();
-//    LeftWheel = readEncRight();
-//    RightWheel = -readEncLeft();
-    LeftWheelmeter = LeftWheel*0.06;
-    RightWheelmeter = RightWheel*0.06;
+    //JS convert to linear position , pos = angle*radius
+    LeftWheelmeter = LeftWheel*radius;
+    RightWheelmeter = RightWheel*radius;
 
+    //JS calculate the velocity of wheels using change position over changing time
     PosLeft_k = LeftWheelmeter;
     VLeftK = (PosLeft_k-PosLeft_k_1)/0.004;
     PosLeft_k_1 = PosLeft_k;
@@ -952,6 +956,7 @@ __interrupt void cpu_timer0_isr(void)
     VRtK = (PosRt_k-PosRt_k_1)/0.004;
     PosRt_k_1 = PosRt_k;
 
+    //JS implemented coupled PI controller structure for left
     eturn = turn+(VLeftK - VRtK);
     eleftk = vref - VLeftK-kpturn*eturn;
     if (fabs(uleft)>10.0){
@@ -964,7 +969,7 @@ __interrupt void cpu_timer0_isr(void)
     eleftk_1 = eleftk;
     Ileftk_1 = Ileftk;
 
-
+    //JS implemented coupled PI controller structure for right
     ertk = vref - VRtK+kpturn*eturn;
     if (fabs(uleft)>10.0){
        Irtk = Irtk_1*0.95;
@@ -976,9 +981,11 @@ __interrupt void cpu_timer0_isr(void)
     ertk_1 = ertk;
     Irtk_1 = Irtk;
 
+    //JS pass calculated us to setEPWM to run the motors
     setEPWM2A(uright);
     setEPWM2B(-uleft);
 
+    //JS implemented pose calculations
     angvel_left = VLeftK/radius;
     angvel_rt = VRtK/radius;
     bearing = (radius/widthrob)*(RightWheel-LeftWheel);
@@ -986,12 +993,13 @@ __interrupt void cpu_timer0_isr(void)
     beavgdot = 0.5*(angvel_left+angvel_rt);
     xrdot = radius*beavgdot*cos(bearing);
     yrdot = radius*beavgdot*sin(bearing);
+    //JS x and y calculated using Trapezoidal Rule integration
     x = x_1+(0.004*(xrdot+x_1dot)/2);
     y = y_1+(0.004*(yrdot+y_1dot)/2);
     x_1 = x;
     y_1 = y;
 
-
+    //JS copy from guideline
     if (measure_status_1 == 0) {
         distright = dis_1;
     } else {
@@ -1004,15 +1012,16 @@ __interrupt void cpu_timer0_isr(void)
     }
 
 
-
+    //JS right wall following controller
     if (rtwallfollow==1){
         turn = kprt *(refrt-distright);
         vref=0.25;
         if (distfront <threshold1){
             rtwallfollow =0;
         }
-        if (ykb1>1500 & ykb1<2500){
-            vref=0;
+        //JS when microphone filter signal is around 2000Hz, robot holds position
+        if (ykb1>0.4 || ykb1<-0.4){
+            vref=-0.25;
         }
     }
     else{
@@ -1020,6 +1029,10 @@ __interrupt void cpu_timer0_isr(void)
         vref=0.25;
         if(distfront>threshold2){
             rtwallfollow =1;
+        }
+        //JS when microphone filter signal is around 2000Hz, robot holds position
+        if (ykb1>0.4 || ykb1<-0.4){
+            vref=-0.25;
         }
     }
 
@@ -1278,24 +1291,28 @@ void setupSpib(void) //Call this function in main() somewhere after the DINT; li
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
+    //JS change to calibrate SPI
     SpibRegs.SPITXBUF = (0x7700 | 0x00E9); // 0x7700
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
+    //JS change to calibrate SPI
     SpibRegs.SPITXBUF = (0x7800 | 0x00AE); // 0x7800
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
+    //JS change to calibrate SPI
     SpibRegs.SPITXBUF = (0x7A00 | 0x0017); // 0x7A00
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
     temp = SpibRegs.SPIRXBUF;
     DELAY_US(10);
     GpioDataRegs.GPCCLEAR.bit.GPIO66 = 1;
+    //JS change to calibrate SPI
     SpibRegs.SPITXBUF = (0x7B00 | 0x00EA); // 0x7B00
     while(SpibRegs.SPIFFRX.bit.RXFFST !=1);
     GpioDataRegs.GPCSET.bit.GPIO66 = 1;
