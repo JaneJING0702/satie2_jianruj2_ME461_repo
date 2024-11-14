@@ -91,8 +91,9 @@ float ertk =0.0;
 float ertk_1 = 0.0;
 float Irtk =0.0;
 float Irtk_1=0.0;
-float Ki =5.0;
-float kp=3.0;
+float Ki =20.0;
+float Kp=3.0;
+float Kd =0.08;
 float turn =0.0;
 float eturn =0.0;
 float kpturn =3.0;
@@ -149,7 +150,7 @@ float accelz_offset = 0;
 float gyrox_offset = 0;
 float gyroy_offset = 0;
 float gyroz_offset = 0;
-float accelzBalancePoint = -.76;
+float accelzBalancePoint = -0.685;
 int16 IMU_data[9];
 uint16_t temp=0;
 int16_t doneCal = 0;
@@ -185,6 +186,27 @@ float k2=-4.5;
 float k3=-1.1;
 float k4=-0.1;
 float ubal =0.0;
+float whldiff =0.0;
+float whldiff_1=0.0;
+float vel_whldiff =0.0;
+float vel_whldiff_1=0.0;
+float turnref=0.0;
+float errordiff=0.0;
+float errordiff_1 =0.0;
+float intdiff =0.0;
+float intdiff_1=0.0;
+float turnrate =0.0;
+float turnrate_1=0.0;
+float turnref_1=0.0;
+float avgwheelvel=0.0;
+float espeed=0.0;
+float Segbot_refspeed=0.0;
+float espeed_1=0.0;
+float IK_espeed=0.0;
+float IK_espeed_1=0.0;
+float forwardbackwardcommand =0.0;
+float kpspeed =0.35;
+float kispeed =1.5;
 
 
 
@@ -847,6 +869,70 @@ __interrupt void SWI_isr(void) {
     EINT;                                 // Clear INTM to enable interrupts
 
 
+    //JS copy from the guideline to communicate with Labview
+    if (NewLVData == 1) {
+        NewLVData = 0;
+        Segbot_refspeed = fromLVvalues[0];
+        turnrate = fromLVvalues[1];
+        printLV3 = fromLVvalues[2];
+        printLV4 = fromLVvalues[3];
+        printLV5 = fromLVvalues[4];
+        printLV6 = fromLVvalues[5];
+        printLV7 = fromLVvalues[6];
+        printLV8 = fromLVvalues[7];
+    }
+    if((numSWIcalls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+        DataToLabView.floatData[0] = x;
+        DataToLabView.floatData[1] = y;
+        DataToLabView.floatData[2] = bearing;
+        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
+        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
+        DataToLabView.floatData[5] = (float)numTimer0calls;
+        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
+        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
+        LVsenddata[0] = '*'; // header for LVdata
+        LVsenddata[1] = '$';
+        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
+            if (i%2==0) {
+                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
+            } else {
+                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
+            }
+        }
+        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
+    }
+    if ((numSWIcalls%50) == 0) {
+        PieCtrlRegs.PIEIFR12.bit.INTx9 = 1;  // Manually cause the interrupt for the SWI
+    }
+
+    //JS angular position of wheels
+    LeftWheel = -readEncLeft();
+    RightWheel = readEncRight();
+    //JS convert to linear position , pos = angle*radius
+    LeftWheelmeter = LeftWheel*radius;
+    RightWheelmeter = RightWheel*radius;
+
+    //JS calculate the velocity of wheels using change position over changing time
+    PosLeft_k = LeftWheelmeter;
+    VLeftK = (PosLeft_k-PosLeft_k_1)/0.004;
+    PosLeft_k_1 = PosLeft_k;
+    PosRt_k = RightWheelmeter;
+    VRtK = (PosRt_k-PosRt_k_1)/0.004;
+    PosRt_k_1 = PosRt_k;
+
+    //    //JS implemented pose calculations
+    angvel_left = VLeftK/radius;
+    angvel_rt = VRtK/radius;
+    bearing = (radius/widthrob)*(RightWheel-LeftWheel);
+    beavg = 0.5*(RightWheel+LeftWheel);
+    beavgdot = 0.5*(angvel_left+angvel_rt);
+    xrdot = radius*beavgdot*cos(bearing);
+    yrdot = radius*beavgdot*sin(bearing);
+    //JS x and y calculated using Trapezoidal Rule integration
+    x = x_1+(0.004*(xrdot+x_1dot)/2);
+    y = y_1+(0.004*(yrdot+y_1dot)/2);
+    x_1 = x;
+    y_1 = y;
 
     // Insert SWI ISR Code here.......
     vel_Left =0.6*vel_Left_pre +100*LeftWheel-100*ltwheel_pre;
@@ -860,10 +946,54 @@ __interrupt void SWI_isr(void) {
     rtwheel_pre =RightWheel;
     gyroratedot_pre=gyrorate_dot;
     gyrovalue_pre=gyro_value;
+    whldiff = LeftWheel-RightWheel;
 
-    ubal =-k1*tilt_value-k2*gyro_value-k3*(vel_Left+vel_Right)/2.0-k4*gyrorate_dot;
-    uleft=ubal/2;
-    uright=ubal/2;
+    vel_whldiff = 0.333*vel_whldiff_1+166.67*whldiff-166.67*whldiff_1;
+    vel_whldiff_1=vel_whldiff;
+    whldiff_1=whldiff;
+
+    turnref = turnref_1+(0.004*(turnrate+turnrate_1)/2);
+    turnref_1=turnref;
+    turnrate_1=turnrate;
+    errordiff =turnref-whldiff;
+    intdiff = intdiff_1+(0.004*(errordiff+errordiff_1)/2);
+    intdiff_1 =intdiff;
+    errordiff_1 =errordiff;
+    turn = Kp*errordiff+Ki*intdiff-Kd*vel_whldiff;
+
+    avgwheelvel=(vel_Left+vel_Right)/2.0;
+    espeed=Segbot_refspeed-avgwheelvel;
+    IK_espeed = IK_espeed_1+(0.004*(espeed+espeed_1)/2.0);
+    forwardbackwardcommand=kpspeed*espeed+kispeed*IK_espeed;
+
+    if (fabs(turn)>3.0){
+        intdiff=intdiff_1;
+    }
+
+
+
+    if (turn>4.0){
+        turn = 4.0;
+    }
+    if (turn<-4.0){
+        turn = -4.0;
+    }
+
+    if (fabs(forwardbackwardcommand)>3){
+        IK_espeed =IK_espeed_1;
+    }
+
+    if (forwardbackwardcommand>4.0){
+        forwardbackwardcommand =4.0;
+    }
+    if (forwardbackwardcommand<-4.0){
+        forwardbackwardcommand =-4.0;
+    }
+
+
+    ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
+    uleft=ubal/2+turn-forwardbackwardcommand;
+    uright=ubal/2-turn-forwardbackwardcommand;
     setEPWM2A(uright);
     setEPWM2B(-uleft);
     numSWIcalls++;
@@ -879,37 +1009,37 @@ __interrupt void cpu_timer0_isr(void)
 
     numTimer0calls++;
     //JS copy from the guideline to communicate with Labview
-//    if (NewLVData == 1) {
-//        NewLVData = 0;
-//        vref = fromLVvalues[0];
-//        turn = fromLVvalues[1];
-//        printLV3 = fromLVvalues[2];
-//        printLV4 = fromLVvalues[3];
-//        printLV5 = fromLVvalues[4];
-//        printLV6 = fromLVvalues[5];
-//        printLV7 = fromLVvalues[6];
-//        printLV8 = fromLVvalues[7];
-//    }
-//    if((numTimer0calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
-//        DataToLabView.floatData[0] = x;
-//        DataToLabView.floatData[1] = y;
-//        DataToLabView.floatData[2] = bearing;
-//        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
-//        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
-//        DataToLabView.floatData[5] = (float)numTimer0calls;
-//        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
-//        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
-//        LVsenddata[0] = '*'; // header for LVdata
-//        LVsenddata[1] = '$';
-//        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
-//            if (i%2==0) {
-//                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
-//            } else {
-//                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
-//            }
-//        }
-//        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
-//    }
+    //    if (NewLVData == 1) {
+    //        NewLVData = 0;
+    //        vref = fromLVvalues[0];
+    //        turn = fromLVvalues[1];
+    //        printLV3 = fromLVvalues[2];
+    //        printLV4 = fromLVvalues[3];
+    //        printLV5 = fromLVvalues[4];
+    //        printLV6 = fromLVvalues[5];
+    //        printLV7 = fromLVvalues[6];
+    //        printLV8 = fromLVvalues[7];
+    //    }
+    //    if((numTimer0calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
+    //        DataToLabView.floatData[0] = x;
+    //        DataToLabView.floatData[1] = y;
+    //        DataToLabView.floatData[2] = bearing;
+    //        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
+    //        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
+    //        DataToLabView.floatData[5] = (float)numTimer0calls;
+    //        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
+    //        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
+    //        LVsenddata[0] = '*'; // header for LVdata
+    //        LVsenddata[1] = '$';
+    //        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
+    //            if (i%2==0) {
+    //                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
+    //            } else {
+    //                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
+    //            }
+    //        }
+    //        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
+    //    }
     //    if ((numTimer0calls%50) == 0) {
     //        PieCtrlRegs.PIEIFR12.bit.INTx9 = 1;  // Manually cause the interrupt for the SWI
     //    }
@@ -1034,14 +1164,14 @@ __interrupt void cpu_timer0_isr(void)
     //    SpibRegs.SPITXBUF = 2200; // PWM Value
 
 
-//
-//    if ((numTimer0calls%50) == 0) {
-//        // Blink LaunchPad Red LED
-//        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
-//    }
-//
-//
-//    // Acknowledge this interrupt to receive more interrupts from group 1
+    //
+    //    if ((numTimer0calls%50) == 0) {
+    //        // Blink LaunchPad Red LED
+    //        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
+    //    }
+    //
+    //
+    //    // Acknowledge this interrupt to receive more interrupts from group 1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
 
@@ -1056,14 +1186,14 @@ __interrupt void cpu_timer1_isr(void)
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
-//    // Blink LaunchPad Blue LED
-//    GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-//
-//    CpuTimer2.InterruptCount++;
-//
-//    if ((CpuTimer2.InterruptCount % 10) == 0) {
-//        //		UARTPrint = 1;
-//    }
+    //    // Blink LaunchPad Blue LED
+    //    GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
+    //
+    //    CpuTimer2.InterruptCount++;
+    //
+    //    if ((CpuTimer2.InterruptCount % 10) == 0) {
+    //        //		UARTPrint = 1;
+    //    }
 }
 
 void setupSpib(void) //Call this function in main() somewhere after the DINT; line of code.
@@ -1397,13 +1527,12 @@ __interrupt void SPIB_isr(void) {
     }
 
 
-//    ltangle = -readEncLeft();
-//    rtangle = readEncRight();
-//    setEPWM2A(uright);
-//    setEPWM2B(-uleft);
+    //    ltangle = -readEncLeft();
+    //    rtangle = readEncRight();
+    //    setEPWM2A(uright);
+    //    setEPWM2B(-uleft);
 
 
-    SpibNumCalls++;
 
     SpibRegs.SPIFFRX.bit.RXFFOVFCLR=1;  // Clear Overflow flag
     SpibRegs.SPIFFRX.bit.RXFFINTCLR=1;  // Clear Interrupt flag
