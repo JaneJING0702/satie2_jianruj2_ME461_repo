@@ -207,7 +207,8 @@ float IK_espeed_1=0.0;
 float forwardbackwardcommand =0.0;
 float kpspeed =0.35;
 float kispeed =1.5;
-
+float testing = 90;
+float movement_dir = 0;
 
 
 extern uint16_t NewLVData;
@@ -341,6 +342,17 @@ void setEPWM2B(float controleffort){
     //JS control duty cycle to 0% when controleffort is -10, 50% when controleffort is 0, 100% when controleffort is 10, converts controleffort value between -10 and 10 to duty cycle 0% to 100%
     EPwm2Regs.CMPB.bit.CMPB = ((controleffort + (float)10))/ ((float)20)* EPwm2Regs.TBPRD;
 }
+void setEPWM8A_RCServo(float angle)
+{
+    if (angle > 90){
+        angle = 90;
+    }
+    if (angle < -90){
+        angle = -90;
+    }
+    //JS control duty cycle to 4% when angle is -90, 8% when angle is 0, 12% when angle is 90, converts angle value between -90 and 90 to duty cycle 4% to 12%
+    EPwm8Regs.CMPA.bit.CMPA = ((((float)8/(float)180)*angle+(float)8)/100)* EPwm8Regs.TBPRD;
+}
 __interrupt void ADCA_ISR (void) {
     //JS lab7 exercise 1.1, SPI transmission code copy from lab 6
     adca2result = AdcaResultRegs.ADCRESULT0;
@@ -381,6 +393,8 @@ void main(void)
     GPIO_SetupPinMux(2, GPIO_MUX_CPU1, 1);
     //JS PinMux to set GPIO3 to EPWM2B
     GPIO_SetupPinMux(3, GPIO_MUX_CPU1, 1);
+    //JS PinMux to set GPIO14 to EPWM8A
+    GPIO_SetupPinMux(14, GPIO_MUX_CPU1, 1);
 
     // Blue LED on LaunchPad
     GPIO_SetupPinMux(31, GPIO_MUX_CPU1, 0);
@@ -664,8 +678,21 @@ void main(void)
     EPwm5Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
     //JS up-count mode, set it to 0
     EPwm5Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
+
     EDIS;
 
+    EPwm8Regs.TBCTL.bit.CTRMODE = 0;
+    EPwm8Regs.TBCTL.bit.FREE_SOFT = 2;
+    EPwm8Regs.TBCTL.bit.PHSEN = 0;
+    //JS for exercise 3, to set the carrier frequency to 50Hz. Firstly, divide the orginal by 2^4
+    EPwm8Regs.TBCTL.bit.CLKDIV = 4;
+    EPwm8Regs.TBCTR = 0;
+    //JS Secondly, to get the period divide TBPRD by carrier frequency value after CLKDIV
+    EPwm8Regs.TBPRD = 65535;
+    EPwm8Regs.CMPA.bit.CMPA = 0;
+    EPwm8Regs.AQCTLA.bit.CAU = 1;
+    EPwm8Regs.AQCTLA.bit.ZRO = 2;
+    EPwm8Regs.TBPHS.bit.TBPHS = 0;
 
     EALLOW;
     //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
@@ -875,7 +902,7 @@ __interrupt void SWI_isr(void) {
         NewLVData = 0;
         Segbot_refspeed = fromLVvalues[0];
         turnrate = fromLVvalues[1];
-        printLV3 = fromLVvalues[2];
+        movement_dir = fromLVvalues[2];
         printLV4 = fromLVvalues[3];
         printLV5 = fromLVvalues[4];
         printLV6 = fromLVvalues[5];
@@ -1004,6 +1031,7 @@ __interrupt void SWI_isr(void) {
     if (forwardbackwardcommand<-4.0){
         forwardbackwardcommand =-4.0;
     }
+    setEPWM8A_RCServo(testing);
 
 //JS lab7 exercise3, calculate the control law
     ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
