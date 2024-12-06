@@ -207,8 +207,10 @@ float IK_espeed_1=0.0;
 float forwardbackwardcommand =0.0;
 float kpspeed =0.35;
 float kispeed =1.5;
-float testing = 90;
 float movement_dir = 0;
+
+float rightwallmode = 0.0;
+int32_t ADCB1count =0;
 
 
 extern uint16_t NewLVData;
@@ -249,6 +251,16 @@ uint32_t measure_status_1 = 0;
 uint32_t measure_status_3 = 0;
 
 volatile uint32_t errorFlag = 0;
+
+float b1[42]={   1.0730089836341656e-05, -1.4033136757606417e-04,    -8.5515722469380365e-04,    -2.0721074825624753e-03,    -3.1562065461539644e-03,    -2.6752995675811274e-03,    1.1179715965213815e-03, 9.0347992311252297e-03, 1.9533244848195394e-02, 2.8175049022238930e-02, 2.8796170703016957e-02, 1.6357328382773616e-02, -9.6848373005823506e-03,    -4.3338689011898766e-02,    -7.2941715370454199e-02,    -8.5212603922433183e-02,    -7.1065342523840544e-02,    -3.0546805920418210e-02,    2.5697934500127386e-02, 7.9598577535676812e-02, 1.1244971353852540e-01, 1.1244971353852540e-01, 7.9598577535676812e-02, 2.5697934500127386e-02, -3.0546805920418210e-02,    -7.1065342523840544e-02,    -8.5212603922433183e-02,    -7.2941715370454199e-02,    -4.3338689011898766e-02,    -9.6848373005823506e-03,    1.6357328382773616e-02, 2.8796170703016957e-02, 2.8175049022238930e-02, 1.9533244848195394e-02, 9.0347992311252297e-03, 1.1179715965213815e-03, -2.6752995675811274e-03,    -3.1562065461539644e-03,    -2.0721074825624753e-03,    -8.5515722469380365e-04,    -1.4033136757606417e-04,    1.0730089836341656e-05};
+
+float b2[42]={   -3.8844527993015866e-04,    -2.3664740551879474e-03,    -1.0691589978498594e-04,    4.9679249374866346e-03, 2.0662268137202769e-03, -9.7775970043433198e-03,    -7.5616544659154921e-03,    1.5836367573881668e-02, 1.8523058007246369e-02, -2.0371737854348829e-02,    -3.5321189076675988e-02,    1.9620474917243901e-02, 5.5802749894096955e-02, -1.0463815568525393e-02,    -7.5415103897280025e-02,    -7.8580932140672136e-03,    8.8556300184164161e-02, 3.2825106488154628e-02, -9.0661006142012210e-02,    -5.9071260358928207e-02,    8.0110714080523115e-02, 8.0110714080523115e-02, -5.9071260358928207e-02,    -9.0661006142012210e-02,    3.2825106488154628e-02, 8.8556300184164161e-02, -7.8580932140672136e-03,    -7.5415103897280025e-02,    -1.0463815568525393e-02,    5.5802749894096955e-02, 1.9620474917243901e-02, -3.5321189076675988e-02,    -2.0371737854348829e-02,    1.8523058007246369e-02, 1.5836367573881668e-02, -7.5616544659154921e-03,    -9.7775970043433198e-03,    2.0662268137202769e-03, 4.9679249374866346e-03, -1.0691589978498594e-04,    -2.3664740551879474e-03,    -3.8844527993015866e-04};
+
+float b3[42]={   8.7176312545007108e-05, -9.7822753453535890e-05,    8.7984769708273952e-04, -1.9204558919963524e-03,    1.4764139888760860e-03, 2.4880720123794551e-03, -9.4132487141947042e-03,    1.3903188094981868e-02, -8.0916030226193068e-03,    -1.0891673840957591e-02,    3.4091943693858227e-02, -4.2756787417129676e-02,    2.1558495954171513e-02, 2.5539175572176286e-02, -7.1235562183782034e-02,    8.0403234529941331e-02, -3.6772081364320371e-02,    -3.9758906474796206e-02,    1.0171012069606974e-01, -1.0568216205831064e-01,    4.4617557066066925e-02, 4.4617557066066925e-02, -1.0568216205831064e-01,    1.0171012069606974e-01, -3.9758906474796206e-02,    -3.6772081364320371e-02,    8.0403234529941331e-02, -7.1235562183782034e-02,    2.5539175572176286e-02, 2.1558495954171513e-02, -4.2756787417129676e-02,    3.4091943693858227e-02, -1.0891673840957591e-02,    -8.0916030226193068e-03,    1.3903188094981868e-02, -9.4132487141947042e-03,    2.4880720123794551e-03, 1.4764139888760860e-03, -1.9204558919963524e-03,    8.7984769708273952e-04, -9.7822753453535890e-05,    8.7176312545007108e-05};
+
+
+
+
 // ----- code for CAN end here -----
 //JS copy from the guideline
 void init_eQEPs(void) {
@@ -294,8 +306,7 @@ void init_eQEPs(void) {
     EQep2Regs.QEPCTL.bit.QPEN = 1; // Enable EQep
 }
 
-//JS define array use to calculate filter signals
-float xkb1array[101]={};
+
 //JS copy from guideline
 float readEncLeft(void) {
     int32_t raw = 0;
@@ -380,6 +391,145 @@ __interrupt void ADCA_ISR (void) {
     SpibRegs.SPITXBUF = 0x0000;
     SpibRegs.SPITXBUF = 0x0000;
 }
+
+void setDACA(float dacouta0) {
+    int16_t DACOutInt = 0;
+    //JS divided by the resolution to scale volts to 0-4095
+    DACOutInt = (dacouta0/3.0)*4096.0; // perform scaling of 0 – almost 3V to 0 - 4095
+    if (DACOutInt > 4095) DACOutInt = 4095;
+    if (DACOutInt < 0) DACOutInt = 0;
+    DacaRegs.DACVALS.bit.DACVALS = DACOutInt;
+}
+
+//Define arrays use to calculate filter signals
+float volts1 = 0.0;
+float xkb1array[41]={};
+float ykb1array[41] = {};
+float max1=1.5;
+float min1=1.5;
+float max2=1.5;
+float min2=1.5;
+float max3=1.5;
+float min3=1.5;
+
+float xkb1=0;
+
+float ykb2 = 0;
+float ykb3 = 0;
+
+float adcb1result=0;
+float diff1=0;
+float diff2=0;
+float diff3=0;
+
+float xkb2array[42]={};
+float ykb2array[42] = {};
+
+float xkb3array[42]={};
+float ykb3array[42] = {};
+
+__interrupt void ADCB_ISR (void) {
+    //JS set GPIO52 as an output
+    GpioDataRegs.GPBSET.bit.GPIO52 = 1;
+    //JS similar to ADCD, but use 100 th order FIR filter
+    adcb1result = AdcbResultRegs.ADCRESULT0;
+    xkb1 = (adcb1result/4096.0)*3.0;
+    ykb1 = 0;
+    ykb2 = 0;
+    ykb3 = 0;
+    max1=0;
+    min1=0;
+    max2=0;
+    min2=0;
+    max3=0;
+    min3=0;
+    //first filter
+    for (int i = 41; i>0; i--){
+        xkb1array[i]=xkb1array[i-1];
+        ykb1 += xkb1array[i]*b1[i];
+        ykb1array[i]=ykb1array[i-1];
+
+        xkb2array[i]=xkb2array[i-1];
+        ykb2 += xkb2array[i]*b2[i];
+        ykb2array[i]=ykb2array[i-1];
+
+        xkb3array[i]=xkb3array[i-1];
+        ykb3 += xkb3array[i]*b3[i];
+        ykb3array[i]=ykb3array[i-1];
+
+
+        if (ykb1array[i]>max1){
+            max1 = ykb1array[i];
+        }
+        if (ykb1array[i]<min1){
+            min1= ykb1array[i];
+        }
+
+        if (ykb2array[i]>max2){
+            max2= ykb2array[i];
+        }
+        if (ykb2array[i]<min2){
+            min2= ykb2array[i];
+        }
+
+        if (ykb3array[i]>max3){
+            max3= ykb3array[i];
+        }
+        if (ykb3array[i]<min3){
+            min3= ykb3array[i];
+        }
+    }
+    diff1=max1-min1;
+    diff2=max2-min2;
+    diff3=max3-min3;
+
+    xkb1array[0]=xkb1;
+    xkb2array[0]=xkb1;
+    xkb3array[0]=xkb1;
+
+    ykb1 += xkb1array[0]*b1[0];
+
+    ykb2 += xkb2array[0]*b2[0];
+
+    ykb3 += xkb3array[0]*b3[0];
+
+    ykb1array[0] = ykb1;
+
+    ykb2array[0] = ykb2;
+
+    ykb3array[0] = ykb3;
+
+    if (diff1 >= 1.0){
+        vref=0.5;
+    }
+    if (diff2 >= 1.0){
+        vref=0.75;
+    }
+    if (diff3 >= 1.0){
+        vref=0.1;
+    }
+
+
+
+    // Here write yk to DACA channel
+    //JS add 1.5 oscilloscope offset
+    setDACA(ykb1+ykb2+ykb3+1.5);
+
+
+//    setDACA(xkb1);
+
+
+    // Print  voltage value to TeraTerm every 100ms
+    ADCB1count++;
+    if (ADCB1count % 100 == 0){
+        UARTPrint = 1;
+    }
+    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //clear interrupt flag
+    PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
+    //JS turn off GPIO52
+    GpioDataRegs.GPBCLEAR.bit.GPIO52 = 1;
+}
+
 
 void main(void)
 {
@@ -592,34 +742,39 @@ void main(void)
     // This function is found in F2837xD_PieVect.c.
     InitPieVectTable();
 
-    // Interrupts that are used in this example are re-mapped to
-    // ISR functions found within this project
-    EALLOW;  // This is needed to write to EALLOW protected registers
-    PieVectTable.TIMER0_INT = &cpu_timer0_isr;
-    PieVectTable.TIMER1_INT = &cpu_timer1_isr;
-    PieVectTable.TIMER2_INT = &cpu_timer2_isr;
-    PieVectTable.SCIA_RX_INT = &RXAINT_recv_ready;
-    PieVectTable.SCIB_RX_INT = &RXBINT_recv_ready;
-    PieVectTable.SCIC_RX_INT = &RXCINT_recv_ready;
-    PieVectTable.SCID_RX_INT = &RXDINT_recv_ready;
-    PieVectTable.SCIA_TX_INT = &TXAINT_data_sent;
-    PieVectTable.SCIB_TX_INT = &TXBINT_data_sent;
-    PieVectTable.SCIC_TX_INT = &TXCINT_data_sent;
-    PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
-    PieVectTable.SPIB_RX_INT = &SPIB_isr;
-    //JS for ADCA to call the memory address of ADCA_ISR
-    PieVectTable.ADCA1_INT = &ADCA_ISR;
+     // Interrupts that are used in this example are re-mapped to
+     // ISR functions found within this project
+     EALLOW;  // This is needed to write to EALLOW protected registers
+     PieVectTable.TIMER0_INT = &cpu_timer0_isr;
+     PieVectTable.TIMER1_INT = &cpu_timer1_isr;
+     PieVectTable.TIMER2_INT = &cpu_timer2_isr;
+     //JS for ADCD to call the memory address of ADCD_ISR
+ //    PieVectTable.ADCD1_INT = &ADCD_ISR;
+     //JS for ADCA to call the memory address of ADCA_ISR
+     PieVectTable.ADCA1_INT = &ADCA_ISR;
+     //JS for ADCB to call the memory address of ADCB_ISR
+     PieVectTable.ADCB1_INT = &ADCB_ISR;
+     PieVectTable.SCIA_RX_INT = &RXAINT_recv_ready;
+     PieVectTable.SCIB_RX_INT = &RXBINT_recv_ready;
+     PieVectTable.SCIC_RX_INT = &RXCINT_recv_ready;
+     PieVectTable.SCID_RX_INT = &RXDINT_recv_ready;
+     PieVectTable.SCIA_TX_INT = &TXAINT_data_sent;
+     PieVectTable.SCIB_TX_INT = &TXBINT_data_sent;
+     PieVectTable.SCIC_TX_INT = &TXCINT_data_sent;
+     PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
 
-    PieVectTable.EMIF_ERROR_INT = &SWI_isr;
-    // ----- code for CAN start here -----
-    PieVectTable.CANB0_INT = &can_isr;
-    // ----- code for CAN end here -----	
-    EDIS;    // This is needed to disable write to EALLOW protected registers
+     PieVectTable.SPIB_RX_INT = &SPIB_isr;
+
+     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
+     // ----- code for CAN start here -----
+     PieVectTable.CANB0_INT = &can_isr;
+     // ----- code for CAN end here -----
+     EDIS;    // This is needed to disable write to EALLOW protected registers
 
 
-    // Initialize the CpuTimers Device Peripheral. This function can be
-    // found in F2837xD_CpuTimers.c
-    InitCpuTimers();
+     // Initialize the CpuTimers Device Peripheral. This function can be
+     // found in F2837xD_CpuTimers.c
+     InitCpuTimers();
 
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
@@ -681,6 +836,29 @@ void main(void)
 
     EDIS;
 
+    //JS EPWM5 and ADCB for setup microphone
+    EALLOW;
+    EPwm4Regs.ETSEL.bit.SOCAEN = 0; // Disable SOC on A group
+    EPwm4Regs.TBCTL.bit.CTRMODE = 3; // freeze counter
+    //JS only bit 1 is high,Enable event time-base counter equal to period
+    EPwm4Regs.ETSEL.bit.SOCASEL = 2; // Select Event when counter equal to PRD
+    //JS when only bit 0 is hig, Generate the EPWM5SOCA pulse on the first event
+    EPwm4Regs.ETPS.bit.SOCAPRD = 1; // Generate pulse on 1st event (“pulse” is the same as “trigger”)
+    EPwm4Regs.TBCTR = 0x0; // Clear counter
+    EPwm4Regs.TBPHS.bit.TBPHS = 0x0000; // Phase is 0
+    EPwm4Regs.TBCTL.bit.PHSEN = 0; // Disable phase loading
+    EPwm4Regs.TBCTL.bit.CLKDIV = 0; // divide by 1 50Mhz Clock
+    //JS lab 7 exercise 1.1, trigger every 1ms
+    EPwm4Regs.TBPRD = 10000;
+    // Notice here that we are not setting CMPA or CMPB because we are not using the PWM signal
+    EPwm4Regs.ETSEL.bit.SOCAEN = 1; //enable SOCA
+    //JS up-count mode, set it to 0
+    EPwm4Regs.TBCTL.bit.CTRMODE = 0; //unfreeze, and enter up count mode
+
+    EDIS;
+
+
+
     EPwm8Regs.TBCTL.bit.CTRMODE = 0;
     EPwm8Regs.TBCTL.bit.FREE_SOFT = 2;
     EPwm8Regs.TBCTL.bit.PHSEN = 0;
@@ -695,16 +873,27 @@ void main(void)
     EPwm8Regs.TBPHS.bit.TBPHS = 0;
 
     EALLOW;
-    //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
-
-    AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
-
-    //Set pulse positions to late
-    AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-    //power up the ADCs
-    AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-    DELAY_US(1000);
+        //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
+        AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+        AdcbRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+        AdccRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+        AdcdRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+        AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+        AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+        AdcSetMode(ADC_ADCC, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+        AdcSetMode(ADC_ADCD, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+        //Set pulse positions to late
+        AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+        AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+        AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+        AdcdRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+        //power up the ADCs
+        AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+        AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+        AdccRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+        AdcdRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+        //delay for 1ms to allow ADC time to power up
+        DELAY_US(1000);
 
 
 
@@ -723,7 +912,41 @@ void main(void)
     AdcaRegs.ADCINTSEL1N2.bit.INT1SEL = 1; //set to last SOC that is converted and it will set INT1 flag ADCA1
     AdcaRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+
+    //ADCB
+        //JS set SOC0 to pin4
+        AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
+        AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+        //JS EPWM5 ADCSOCA is 13
+        AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 11; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+    //  AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
+    //  AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    //  AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
+    //  AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
+    //  AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    //  AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
+    //  AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
+    //  AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    //  AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
+        //JS set to the last converted SOC0
+        AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
+        AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+        AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+
     EDIS;
+
+    //JS initialize the DACs copied from guideline
+    // Enable DACA and DACB outputs
+    EALLOW;
+    DacaRegs.DACOUTEN.bit.DACOUTEN = 1; //enable dacA output-->uses ADCINA0
+    DacaRegs.DACCTL.bit.LOADMODE = 0; //load on next sysclk
+    DacaRegs.DACCTL.bit.DACREFSEL = 1; //use ADC VREF as reference voltage
+    DacbRegs.DACOUTEN.bit.DACOUTEN = 1; //enable dacB output-->uses ADCINA1
+    DacbRegs.DACCTL.bit.LOADMODE = 0; //load on next sysclk
+    DacbRegs.DACCTL.bit.DACREFSEL = 1; //use ADC VREF as reference voltage
+    EDIS;
+
+
 
     // Enable CPU int1 which is connected to CPU-Timer 0, CPU int13
     // which is connected to CPU-Timer 1, and CPU int 14, which is connected
@@ -748,6 +971,8 @@ void main(void)
 
     //JS Enable ADCA1 in the PIE: Group 1 interrupt 1
     PieCtrlRegs.PIEIER1.bit.INTx1 = 1;
+    //JS Enable ADCB1 in the PIE: Group 1 interrupt 1
+    PieCtrlRegs.PIEIER1.bit.INTx2 = 1;
 
     // ----- code for CAN start here -----
     // Enable the CAN interrupt signal
@@ -1031,7 +1256,7 @@ __interrupt void SWI_isr(void) {
     if (forwardbackwardcommand<-4.0){
         forwardbackwardcommand =-4.0;
     }
-    setEPWM8A_RCServo(testing);
+
 
 //JS lab7 exercise3, calculate the control law
     ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
@@ -1041,6 +1266,13 @@ __interrupt void SWI_isr(void) {
     //JS lab 7 exercise3, drive motors with control efforts
     setEPWM2A(uright);
     setEPWM2B(-uleft);
+    if(rightwallmode == 0.0){
+        setEPWM8A_RCServo(80);
+    }
+    else{
+        setEPWM8A_RCServo(-80);
+    }
+
     numSWIcalls++;
 
     DINT;
