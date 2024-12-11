@@ -70,12 +70,19 @@ float gyrox = 0;
 float gyroy = 0;
 float gyroz = 0;
 
+float ki =5.0;
+float kp=3.0;
+
 float LeftWheel = 0.0;
 float RightWheel = 0.0;
 float LeftWheelmeter =0.0;
 float RightWheelmeter =0.0;
 float uleft = 5.0;
+float uleft1 = 0.0;
+float uleft2 = 0.0;
 float uright = 5.0;
+float uright1 = 0.0;
+float uright2 = 0.0;
 float PosLeft_k =0.0;
 float PosLeft_k_1 =0.0;
 float PosRt_k =0.0;
@@ -95,6 +102,7 @@ float Ki =20.0;
 float Kp=3.0;
 float Kd =0.08;
 float turn =0.0;
+float turnbal =0.0;
 float eturn =0.0;
 float kpturn =3.0;
 float radius = 0.06;
@@ -114,7 +122,7 @@ float distright =0.0;
 float distfront =0.0;
 float distright_1 = 0.0;
 float distfront_1 =0.0;
-float kprt = 0.0015;
+float kprt = 0.003;
 float kpft =0.0005;
 float refrt =300;
 float refft =1400;
@@ -150,7 +158,7 @@ float accelz_offset = 0;
 float gyrox_offset = 0;
 float gyroy_offset = 0;
 float gyroz_offset = 0;
-float accelzBalancePoint = -0.685;
+float accelzBalancePoint = -0.6390;
 int16 IMU_data[9];
 uint16_t temp=0;
 int16_t doneCal = 0;
@@ -208,6 +216,7 @@ float forwardbackwardcommand =0.0;
 float kpspeed =0.35;
 float kispeed =1.5;
 float movement_dir = 0;
+float delay_counter = 0.0;
 
 float rightwallmode = 0.0;
 int32_t ADCB1count =0;
@@ -779,7 +788,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 4000);
-    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 1000000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 40000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -1173,6 +1182,7 @@ __interrupt void SWI_isr(void) {
     VRtK = (PosRt_k-PosRt_k_1)/0.004;
     PosRt_k_1 = PosRt_k;
 
+
     //    //JS implemented pose calculations
     angvel_left = VLeftK/radius;
     angvel_rt = VRtK/radius;
@@ -1210,6 +1220,36 @@ __interrupt void SWI_isr(void) {
     vel_whldiff_1=vel_whldiff;
     whldiff_1=whldiff;
 
+    if (delay_counter > 10){
+
+        if (measure_status_1 == 0) {
+            distright = dis_1;
+        } else {
+            distright = 1400; // set to max reading if error
+        }
+        if (measure_status_3 == 0) {
+            distfront = dis_3;
+        } else {
+            distfront = 1400; // set to max reading if error
+        }
+
+
+        //JS right wall following controller
+        if (rtwallfollow==1){
+            turn = kprt *(refrt-distright);
+            if (distfront <threshold1){
+                rtwallfollow =0;
+            }
+        }
+        else{
+            turn = kpft *(refft-distfront);
+
+            if(distfront>threshold2){
+                rtwallfollow =1;
+            }
+        }
+    }
+
     //JS lab 7 exercise4, use trapezoidal rule to calculate turnref
     turnref = turnref_1+(0.004*(turnrate+turnrate_1)/2);
     turnref_1=turnref;
@@ -1221,7 +1261,7 @@ __interrupt void SWI_isr(void) {
     intdiff_1 =intdiff;
     errordiff_1 =errordiff;
     //JS lab 7 exercise4, PID control turn command
-    turn = Kp*errordiff+Ki*intdiff-Kd*vel_whldiff;
+    turnbal = Kp*errordiff+Ki*intdiff-Kd*vel_whldiff;
 
     //JS lab 7 exercise5, calculate error between Segbot_refspeed and average wheel velocity
     avgwheelvel=(vel_Left+vel_Right)/2.0;
@@ -1230,6 +1270,8 @@ __interrupt void SWI_isr(void) {
     IK_espeed = IK_espeed_1+(0.004*(espeed+espeed_1)/2.0);
     //JS lab 7 exercise5, implement PI speed control
     forwardbackwardcommand=kpspeed*espeed+kispeed*IK_espeed;
+
+
 
     //JS lab 7 exercise4, guard against integral windup
     if (fabs(turn)>3.0){
@@ -1256,13 +1298,43 @@ __interrupt void SWI_isr(void) {
     if (forwardbackwardcommand<-4.0){
         forwardbackwardcommand =-4.0;
     }
+    //JS implemented coupled PI controller structure for left
+     eturn = turn + (VLeftK - VRtK);
+     eleftk = vref - VLeftK-kpturn*eturn;
+     if (fabs(uleft)>10.0){
+        Ileftk = Ileftk_1*0.95;
+     } else {
+         Ileftk = Ileftk_1 + (0.004*(eleftk+eleftk_1)/2);
+     }
+
+//     uleft = kp*eleftk+Ki*Ileftk;
+     eleftk_1 = eleftk;
+     Ileftk_1 = Ileftk;
+
+     //JS implemented coupled PI controller structure for right
+     ertk = vref - VRtK+kpturn*eturn;
+     if (fabs(uleft)>10.0){
+        Irtk = Irtk_1*0.95;
+     } else {
+         Irtk = Irtk_1 + (0.004*(ertk+ertk_1)/2);
+     }
+
+//     uright = kp*ertk+Ki*Irtk;
+     ertk_1 = ertk;
+     Irtk_1 = Irtk;
 
 
 //JS lab7 exercise3, calculate the control law
     ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
     //JS lab 7 exercise3, 4,5, calculate control effort of motors
-    uleft=ubal/2+turn-forwardbackwardcommand;
-    uright=ubal/2-turn-forwardbackwardcommand;
+    uleft1=ubal/2+turnbal-forwardbackwardcommand;
+    //uleft2= kp*eleftk+ki*Ileftk;
+    uleft=uleft1+uleft2;
+
+    uright1=ubal/2-turnbal-forwardbackwardcommand;
+    //uright2=kp*ertk+ki*Irtk;
+    uright = uright1+uright2;
+
     //JS lab 7 exercise3, drive motors with control efforts
     setEPWM2A(uright);
     setEPWM2B(-uleft);
@@ -1274,6 +1346,7 @@ __interrupt void SWI_isr(void) {
     }
 
     numSWIcalls++;
+//    delay_counter++;
 
     DINT;
 
@@ -1456,7 +1529,7 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-
+    delay_counter++;
     CpuTimer1.InterruptCount++;
 }
 

@@ -150,7 +150,7 @@ float accelz_offset = 0;
 float gyrox_offset = 0;
 float gyroy_offset = 0;
 float gyroz_offset = 0;
-float accelzBalancePoint = -0.685;
+float accelzBalancePoint = -0.6390;
 int16 IMU_data[9];
 uint16_t temp=0;
 int16_t doneCal = 0;
@@ -207,6 +207,7 @@ float IK_espeed_1=0.0;
 float forwardbackwardcommand =0.0;
 float kpspeed =0.35;
 float kispeed =1.5;
+float delay_counter = 0.0;
 
 
 
@@ -610,7 +611,7 @@ void main(void)
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
     ConfigCpuTimer(&CpuTimer0, LAUNCHPAD_CPU_FREQUENCY, 4000);
-    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 20000);
+    ConfigCpuTimer(&CpuTimer1, LAUNCHPAD_CPU_FREQUENCY, 1000);
     ConfigCpuTimer(&CpuTimer2, LAUNCHPAD_CPU_FREQUENCY, 40000);
 
     // Enable CpuTimer Interrupt bit TIE
@@ -958,6 +959,45 @@ __interrupt void SWI_isr(void) {
     vel_whldiff_1=vel_whldiff;
     whldiff_1=whldiff;
 
+//    if (delay_counter > 20000){
+    // Run wall_follow measures
+//        if (measure_status_1 == 0) {
+//            distright = dis_1;
+//        } else {
+//            distright = 1400; // set to max reading if error
+//        }
+//        if (measure_status_3 == 0) {
+//            distfront = dis_3;
+//        } else {
+//            distfront = 1400; // set to max reading if error
+//        }
+//
+//
+//        //JS right wall following controller
+//        if (rtwallfollow==1){
+//            turn = kprt *(refrt-distright);
+//            vref = 0.25;
+//            if (distfront <threshold1){
+//                rtwallfollow =0;
+//            }
+//            //JS when microphone filter signal is around 2000Hz, robot holds position
+//            if (ykb1>0.4 || ykb1<-0.4){
+//                vref=-0.25;
+//            }
+//        }
+//        else{
+//            turn = kpft *(refft-distfront);
+//            vref = 0.25;
+//            if(distfront>threshold2){
+//                rtwallfollow =1;
+//            }
+//            //JS when microphone filter signal is around 2000Hz, robot holds position
+//            if (ykb1>0.4 || ykb1<-0.4){
+//                vref=-0.25;
+//            }
+//        }
+//    }
+
     //JS lab 7 exercise4, use trapezoidal rule to calculate turnref
     turnref = turnref_1+(0.004*(turnrate+turnrate_1)/2);
     turnref_1=turnref;
@@ -1196,7 +1236,7 @@ __interrupt void cpu_timer0_isr(void)
 // cpu_timer1_isr - CPU Timer1 ISR
 __interrupt void cpu_timer1_isr(void)
 {
-
+    delay_counter += 1;
     CpuTimer1.InterruptCount++;
 }
 
