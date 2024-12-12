@@ -70,8 +70,8 @@ float gyrox = 0;
 float gyroy = 0;
 float gyroz = 0;
 
-float ki =5.0;
-float kp=3.0;
+float ki =0.5;
+float kp=0.3;
 
 float LeftWheel = 0.0;
 float RightWheel = 0.0;
@@ -158,6 +158,7 @@ float accelz_offset = 0;
 float gyrox_offset = 0;
 float gyroy_offset = 0;
 float gyroz_offset = 0;
+//float accelzBalancePoint = -0.6390;
 float accelzBalancePoint = -0.6390;
 int16 IMU_data[9];
 uint16_t temp=0;
@@ -452,6 +453,7 @@ __interrupt void ADCB_ISR (void) {
     min2=0;
     max3=0;
     min3=0;
+    vref=0.25;
     //first filter
     for (int i = 41; i>0; i--){
         xkb1array[i]=xkb1array[i-1];
@@ -508,15 +510,15 @@ __interrupt void ADCB_ISR (void) {
 
     ykb3array[0] = ykb3;
 
-    if (diff1 >= 1.0){
-        vref=0.5;
-    }
-    if (diff2 >= 1.0){
-        vref=0.75;
-    }
-    if (diff3 >= 1.0){
-        vref=0.1;
-    }
+//    if (diff1 >= 1.0){
+//        vref=0.5;
+//    }
+//    if (diff2 >= 1.0){
+//        vref=0.75;
+//    }
+//    if (diff3 >= 1.0){
+//        vref=0.1;
+//    }
 
 
 
@@ -1221,6 +1223,7 @@ __interrupt void SWI_isr(void) {
     whldiff_1=whldiff;
 
     if (delay_counter > 10){
+        accelzBalancePoint=-0.61;
 
         if (measure_status_1 == 0) {
             distright = dis_1;
@@ -1251,9 +1254,9 @@ __interrupt void SWI_isr(void) {
     }
 
     //JS lab 7 exercise4, use trapezoidal rule to calculate turnref
-    turnref = turnref_1+(0.004*(turnrate+turnrate_1)/2);
+    turnref = turnref_1+(0.004*(turn+turnrate_1)/2);
     turnref_1=turnref;
-    turnrate_1=turnrate;
+    turnrate_1=turn;
     //JS lab 7 exercise4, error between turnref and feedback signal
     errordiff =turnref-whldiff;
     //JS lab 7 exercise4, integrate errordiff using trapezoidal rule
@@ -1263,9 +1266,13 @@ __interrupt void SWI_isr(void) {
     //JS lab 7 exercise4, PID control turn command
     turnbal = Kp*errordiff+Ki*intdiff-Kd*vel_whldiff;
 
+
+
+
     //JS lab 7 exercise5, calculate error between Segbot_refspeed and average wheel velocity
     avgwheelvel=(vel_Left+vel_Right)/2.0;
-    espeed=Segbot_refspeed-avgwheelvel;
+//    espeed=Segbot_refspeed-avgwheelvel;
+    espeed=vref-avgwheelvel;
     //JS lab 7 exercise5, calculate IK_espeed
     IK_espeed = IK_espeed_1+(0.004*(espeed+espeed_1)/2.0);
     //JS lab 7 exercise5, implement PI speed control
@@ -1279,13 +1286,13 @@ __interrupt void SWI_isr(void) {
     }
 
 
-    //Js lab 7 exercise4, satuarate turn between -4 and 4
-    if (turn>4.0){
-        turn = 4.0;
-    }
-    if (turn<-4.0){
-        turn = -4.0;
-    }
+//    //Js lab 7 exercise4, satuarate turn between -4 and 4
+//    if (turn>4.0){
+//        turn = 4.0;
+//    }
+//    if (turn<-4.0){
+//        turn = -4.0;
+//    }
 
     //JS lab 7 exercise5, guard against integral espeed
     if (fabs(forwardbackwardcommand)>3){
@@ -1308,8 +1315,7 @@ __interrupt void SWI_isr(void) {
      }
 
 //     uleft = kp*eleftk+Ki*Ileftk;
-     eleftk_1 = eleftk;
-     Ileftk_1 = Ileftk;
+
 
      //JS implemented coupled PI controller structure for right
      ertk = vref - VRtK+kpturn*eturn;
@@ -1320,29 +1326,33 @@ __interrupt void SWI_isr(void) {
      }
 
 //     uright = kp*ertk+Ki*Irtk;
+
+
+
+     //JS lab7 exercise3, calculate the control law
+     ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
+     //JS lab 7 exercise3, 4,5, calculate control effort of motors
+     //    uleft1=ubal/2+turnbal-forwardbackwardcommand;
+     uleft=ubal/2+(kp*eleftk+ki*Ileftk);
+     eleftk_1 = eleftk;
+     Ileftk_1 = Ileftk;
+     //uleft2= kp*eleftk+ki*Ileftk;
+     //    uleft=uleft1+uleft2;
+
+     //    uright1=ubal/2-turnbal-forwardbackwardcommand;
+     uright=ubal/2+(kp*ertk+ki*Irtk);
+     //uright2=kp*ertk+ki*Irtk;
+     //    uright = uright1+uright2;
      ertk_1 = ertk;
      Irtk_1 = Irtk;
-
-
-//JS lab7 exercise3, calculate the control law
-    ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
-    //JS lab 7 exercise3, 4,5, calculate control effort of motors
-    uleft1=ubal/2+turnbal-forwardbackwardcommand;
-    //uleft2= kp*eleftk+ki*Ileftk;
-    uleft=uleft1+uleft2;
-
-    uright1=ubal/2-turnbal-forwardbackwardcommand;
-    //uright2=kp*ertk+ki*Irtk;
-    uright = uright1+uright2;
-
-    //JS lab 7 exercise3, drive motors with control efforts
-    setEPWM2A(uright);
-    setEPWM2B(-uleft);
+     //JS lab 7 exercise3, drive motors with control efforts
+     setEPWM2A(uright);
+     setEPWM2B(-uleft);
     if(rightwallmode == 0.0){
-        setEPWM8A_RCServo(80);
+        setEPWM8A_RCServo(90);
     }
     else{
-        setEPWM8A_RCServo(-80);
+        setEPWM8A_RCServo(-90);
     }
 
     numSWIcalls++;
