@@ -77,10 +77,10 @@ float LeftWheel = 0.0;
 float RightWheel = 0.0;
 float LeftWheelmeter =0.0;
 float RightWheelmeter =0.0;
-float uleft = 5.0;
+float uleft = 1.0;
 float uleft1 = 0.0;
 float uleft2 = 0.0;
-float uright = 5.0;
+float uright =1.0;
 float uright1 = 0.0;
 float uright2 = 0.0;
 float PosLeft_k =0.0;
@@ -90,7 +90,8 @@ float PosRt_k_1 =0.0;
 float VLeftK =0.0;
 float VRtK =0.0;
 float eleftk =0.0;
-float vref =0.25;
+//float vref =0.0;
+float vref = 0.25;
 float eleftk_1 = 0.0;
 float Ileftk =0.0;
 float Ileftk_1=0.0;
@@ -102,6 +103,9 @@ float Ki =20.0;
 float Kp=3.0;
 float Kd =0.08;
 float turn =0.0;
+float ltturn =0.0;
+float rtturn =0.0;
+
 float turnbal =0.0;
 float eturn =0.0;
 float kpturn =3.0;
@@ -159,7 +163,7 @@ float gyrox_offset = 0;
 float gyroy_offset = 0;
 float gyroz_offset = 0;
 //float accelzBalancePoint = -0.6390;
-float accelzBalancePoint = -0.6390;
+float accelzBalancePoint = -0.630;
 int16 IMU_data[9];
 uint16_t temp=0;
 int16_t doneCal = 0;
@@ -221,7 +225,10 @@ float delay_counter = 0.0;
 
 float rightwallmode = 0.0;
 int32_t ADCB1count =0;
-
+int32_t triggercounter=0;
+int32_t triggercounter1=0;
+int32_t triggercounter2=0;
+int32_t trigger=5;
 
 extern uint16_t NewLVData;
 extern float fromLVvalues[LVNUM_TOFROM_FLOATS];
@@ -453,7 +460,8 @@ __interrupt void ADCB_ISR (void) {
     min2=0;
     max3=0;
     min3=0;
-    vref=0.25;
+//    vref=0.0;
+//    vref=0.25;
     //first filter
     for (int i = 41; i>0; i--){
         xkb1array[i]=xkb1array[i-1];
@@ -510,14 +518,78 @@ __interrupt void ADCB_ISR (void) {
 
     ykb3array[0] = ykb3;
 
-//    if (diff1 >= 1.0){
-//        vref=0.5;
+    if (diff1 >= 0.8){
+        triggercounter1=0;
+    }
+
+
+//    if (trigger>triggercounter1){
+//        vref=1;
+//        displayLEDletter(10);
 //    }
-//    if (diff2 >= 1.0){
+//    else{
+//        vref=0.0;
+//        displayLEDletter(0);
+//    }
+
+
+//        }
+    if (diff2 >= 0.8){
+        triggercounter = 0;
+
+        //        trigger++;
+    }
+
+//    if (trigger>triggercounter){
 //        vref=0.75;
+//        displayLEDletter(11);
+//        //            trigger++;
 //    }
-//    if (diff3 >= 1.0){
+//
+//    else{
+//        vref=0.0;
+//        displayLEDletter(0);
+//    }
+
+
+
+
+
+//    else{
+//            displayLEDletter(0);
+//        }
+    if (diff3 >= 0.8                                ){
+        triggercounter2=0;
+    }
+
+
+//    if (trigger>triggercounter2){
 //        vref=0.1;
+//        displayLEDletter(12);
+//    }
+//    else{
+//        vref=0.0;
+//        displayLEDletter(0);
+//    }
+
+
+    if (trigger>triggercounter1){
+        vref=0.25;
+        displayLEDletter(10);
+    } else if (trigger>triggercounter){
+        vref=0.25;
+        displayLEDletter(11);
+    } else if (trigger>triggercounter2){
+        vref=0.25;
+        displayLEDletter(12);
+    }     else{
+        vref=0.25;
+        displayLEDletter(0);
+    }
+
+
+//    else{
+//        displayLEDletter(0);
 //    }
 
 
@@ -1223,7 +1295,6 @@ __interrupt void SWI_isr(void) {
     whldiff_1=whldiff;
 
     if (delay_counter > 10){
-        accelzBalancePoint=-0.61;
 
         if (measure_status_1 == 0) {
             distright = dis_1;
@@ -1239,13 +1310,13 @@ __interrupt void SWI_isr(void) {
 
         //JS right wall following controller
         if (rtwallfollow==1){
-            turn = kprt *(refrt-distright);
+            turn = -kprt *(refrt-distright);
             if (distfront <threshold1){
                 rtwallfollow =0;
             }
         }
         else{
-            turn = kpft *(refft-distfront);
+            turn = -kpft *(refft-distfront);
 
             if(distfront>threshold2){
                 rtwallfollow =1;
@@ -1271,8 +1342,10 @@ __interrupt void SWI_isr(void) {
 
     //JS lab 7 exercise5, calculate error between Segbot_refspeed and average wheel velocity
     avgwheelvel=(vel_Left+vel_Right)/2.0;
+
 //    espeed=Segbot_refspeed-avgwheelvel;
     espeed=vref-avgwheelvel;
+
     //JS lab 7 exercise5, calculate IK_espeed
     IK_espeed = IK_espeed_1+(0.004*(espeed+espeed_1)/2.0);
     //JS lab 7 exercise5, implement PI speed control
@@ -1286,6 +1359,13 @@ __interrupt void SWI_isr(void) {
     }
 
 
+    //Js lab 7 exercise4, satuarate turn between -4 and 4
+    if (turnbal>4.0){
+        turnbal = 4.0;
+    }
+    if (turnbal<-4.0){
+        turnbal = -4.0;
+    }
 //    //Js lab 7 exercise4, satuarate turn between -4 and 4
 //    if (turn>4.0){
 //        turn = 4.0;
@@ -1305,49 +1385,21 @@ __interrupt void SWI_isr(void) {
     if (forwardbackwardcommand<-4.0){
         forwardbackwardcommand =-4.0;
     }
-    //JS implemented coupled PI controller structure for left
-     eturn = turn + (VLeftK - VRtK);
-     eleftk = vref - VLeftK-kpturn*eturn;
-     if (fabs(uleft)>10.0){
-        Ileftk = Ileftk_1*0.95;
-     } else {
-         Ileftk = Ileftk_1 + (0.004*(eleftk+eleftk_1)/2);
-     }
-
-//     uleft = kp*eleftk+Ki*Ileftk;
-
-
-     //JS implemented coupled PI controller structure for right
-     ertk = vref - VRtK+kpturn*eturn;
-     if (fabs(uleft)>10.0){
-        Irtk = Irtk_1*0.95;
-     } else {
-         Irtk = Irtk_1 + (0.004*(ertk+ertk_1)/2);
-     }
-
-//     uright = kp*ertk+Ki*Irtk;
 
 
 
-     //JS lab7 exercise3, calculate the control law
-     ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
-     //JS lab 7 exercise3, 4,5, calculate control effort of motors
-     //    uleft1=ubal/2+turnbal-forwardbackwardcommand;
-     uleft=ubal/2+(kp*eleftk+ki*Ileftk);
-     eleftk_1 = eleftk;
-     Ileftk_1 = Ileftk;
-     //uleft2= kp*eleftk+ki*Ileftk;
-     //    uleft=uleft1+uleft2;
 
-     //    uright1=ubal/2-turnbal-forwardbackwardcommand;
-     uright=ubal/2+(kp*ertk+ki*Irtk);
-     //uright2=kp*ertk+ki*Irtk;
-     //    uright = uright1+uright2;
-     ertk_1 = ertk;
-     Irtk_1 = Irtk;
-     //JS lab 7 exercise3, drive motors with control efforts
-     setEPWM2A(uright);
-     setEPWM2B(-uleft);
+    //JS lab7 exercise3, calculate the control law
+    ubal =-k1*tilt_value-k2*gyro_value-k3*avgwheelvel-k4*gyrorate_dot;
+    //JS lab 7 exercise3, 4,5, calculate control effort of motors
+
+    uleft=ubal/2+turnbal-forwardbackwardcommand;
+
+    uright=ubal/2-turnbal-forwardbackwardcommand;
+
+    //JS lab 7 exercise3, drive motors with control efforts
+    setEPWM2A(uright);
+    setEPWM2B(-uleft);
     if(rightwallmode == 0.0){
         setEPWM8A_RCServo(90);
     }
@@ -1540,6 +1592,9 @@ __interrupt void cpu_timer0_isr(void)
 __interrupt void cpu_timer1_isr(void)
 {
     delay_counter++;
+    triggercounter++;
+    triggercounter1++;
+    triggercounter2++;
     CpuTimer1.InterruptCount++;
 }
 
