@@ -145,6 +145,9 @@ int16_t adca3result =0;
 float ltangle =0.0;
 float rtangle =0.0;
 
+float printLV1 = 0;
+float printLV2 = 0;
+
 float printLV3 = 0;
 float printLV4 = 0;
 float printLV5 = 0;
@@ -222,6 +225,7 @@ float kpspeed =0.35;
 float kispeed =1.5;
 float movement_dir = 0;
 float delay_counter = 0.0;
+float ltwallfollow =0.0;
 
 float rightwallmode = 0.0;
 int32_t ADCB1count =0;
@@ -460,8 +464,8 @@ __interrupt void ADCB_ISR (void) {
     min2=0;
     max3=0;
     min3=0;
-//    vref=0.0;
-//    vref=0.25;
+    //    vref=0.0;
+    //    vref=0.25;
     //first filter
     for (int i = 41; i>0; i--){
         xkb1array[i]=xkb1array[i-1];
@@ -523,54 +527,54 @@ __interrupt void ADCB_ISR (void) {
     }
 
 
-//    if (trigger>triggercounter1){
-//        vref=1;
-//        displayLEDletter(10);
-//    }
-//    else{
-//        vref=0.0;
-//        displayLEDletter(0);
-//    }
+    //    if (trigger>triggercounter1){
+    //        vref=1;
+    //        displayLEDletter(10);
+    //    }
+    //    else{
+    //        vref=0.0;
+    //        displayLEDletter(0);
+    //    }
 
 
-//        }
+    //        }
     if (diff2 >= 0.8){
         triggercounter = 0;
 
         //        trigger++;
     }
 
-//    if (trigger>triggercounter){
-//        vref=0.75;
-//        displayLEDletter(11);
-//        //            trigger++;
-//    }
-//
-//    else{
-//        vref=0.0;
-//        displayLEDletter(0);
-//    }
+    //    if (trigger>triggercounter){
+    //        vref=0.75;
+    //        displayLEDletter(11);
+    //        //            trigger++;
+    //    }
+    //
+    //    else{
+    //        vref=0.0;
+    //        displayLEDletter(0);
+    //    }
 
 
 
 
 
-//    else{
-//            displayLEDletter(0);
-//        }
+    //    else{
+    //            displayLEDletter(0);
+    //        }
     if (diff3 >= 0.8                                ){
         triggercounter2=0;
     }
 
 
-//    if (trigger>triggercounter2){
-//        vref=0.1;
-//        displayLEDletter(12);
-//    }
-//    else{
-//        vref=0.0;
-//        displayLEDletter(0);
-//    }
+    //    if (trigger>triggercounter2){
+    //        vref=0.1;
+    //        displayLEDletter(12);
+    //    }
+    //    else{
+    //        vref=0.0;
+    //        displayLEDletter(0);
+    //    }
 
 
     if (trigger>triggercounter1){
@@ -588,9 +592,9 @@ __interrupt void ADCB_ISR (void) {
     }
 
 
-//    else{
-//        displayLEDletter(0);
-//    }
+    //    else{
+    //        displayLEDletter(0);
+    //    }
 
 
 
@@ -599,7 +603,7 @@ __interrupt void ADCB_ISR (void) {
     setDACA(ykb1+ykb2+ykb3+1.5);
 
 
-//    setDACA(xkb1);
+    //    setDACA(xkb1);
 
 
     // Print  voltage value to TeraTerm every 100ms
@@ -825,39 +829,39 @@ void main(void)
     // This function is found in F2837xD_PieVect.c.
     InitPieVectTable();
 
-     // Interrupts that are used in this example are re-mapped to
-     // ISR functions found within this project
-     EALLOW;  // This is needed to write to EALLOW protected registers
-     PieVectTable.TIMER0_INT = &cpu_timer0_isr;
-     PieVectTable.TIMER1_INT = &cpu_timer1_isr;
-     PieVectTable.TIMER2_INT = &cpu_timer2_isr;
-     //JS for ADCD to call the memory address of ADCD_ISR
- //    PieVectTable.ADCD1_INT = &ADCD_ISR;
-     //JS for ADCA to call the memory address of ADCA_ISR
-     PieVectTable.ADCA1_INT = &ADCA_ISR;
-     //JS for ADCB to call the memory address of ADCB_ISR
-     PieVectTable.ADCB1_INT = &ADCB_ISR;
-     PieVectTable.SCIA_RX_INT = &RXAINT_recv_ready;
-     PieVectTable.SCIB_RX_INT = &RXBINT_recv_ready;
-     PieVectTable.SCIC_RX_INT = &RXCINT_recv_ready;
-     PieVectTable.SCID_RX_INT = &RXDINT_recv_ready;
-     PieVectTable.SCIA_TX_INT = &TXAINT_data_sent;
-     PieVectTable.SCIB_TX_INT = &TXBINT_data_sent;
-     PieVectTable.SCIC_TX_INT = &TXCINT_data_sent;
-     PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
+    // Interrupts that are used in this example are re-mapped to
+    // ISR functions found within this project
+    EALLOW;  // This is needed to write to EALLOW protected registers
+    PieVectTable.TIMER0_INT = &cpu_timer0_isr;
+    PieVectTable.TIMER1_INT = &cpu_timer1_isr;
+    PieVectTable.TIMER2_INT = &cpu_timer2_isr;
+    //JS for ADCD to call the memory address of ADCD_ISR
+    //    PieVectTable.ADCD1_INT = &ADCD_ISR;
+    //JS for ADCA to call the memory address of ADCA_ISR
+    PieVectTable.ADCA1_INT = &ADCA_ISR;
+    //JS for ADCB to call the memory address of ADCB_ISR
+    PieVectTable.ADCB1_INT = &ADCB_ISR;
+    PieVectTable.SCIA_RX_INT = &RXAINT_recv_ready;
+    PieVectTable.SCIB_RX_INT = &RXBINT_recv_ready;
+    PieVectTable.SCIC_RX_INT = &RXCINT_recv_ready;
+    PieVectTable.SCID_RX_INT = &RXDINT_recv_ready;
+    PieVectTable.SCIA_TX_INT = &TXAINT_data_sent;
+    PieVectTable.SCIB_TX_INT = &TXBINT_data_sent;
+    PieVectTable.SCIC_TX_INT = &TXCINT_data_sent;
+    PieVectTable.SCID_TX_INT = &TXDINT_data_sent;
 
-     PieVectTable.SPIB_RX_INT = &SPIB_isr;
+    PieVectTable.SPIB_RX_INT = &SPIB_isr;
 
-     PieVectTable.EMIF_ERROR_INT = &SWI_isr;
-     // ----- code for CAN start here -----
-     PieVectTable.CANB0_INT = &can_isr;
-     // ----- code for CAN end here -----
-     EDIS;    // This is needed to disable write to EALLOW protected registers
+    PieVectTable.EMIF_ERROR_INT = &SWI_isr;
+    // ----- code for CAN start here -----
+    PieVectTable.CANB0_INT = &can_isr;
+    // ----- code for CAN end here -----
+    EDIS;    // This is needed to disable write to EALLOW protected registers
 
 
-     // Initialize the CpuTimers Device Peripheral. This function can be
-     // found in F2837xD_CpuTimers.c
-     InitCpuTimers();
+    // Initialize the CpuTimers Device Peripheral. This function can be
+    // found in F2837xD_CpuTimers.c
+    InitCpuTimers();
 
     // Configure CPU-Timer 0, 1, and 2 to interrupt every given period:
     // 200MHz CPU Freq,                       Period (in uSeconds)
@@ -956,27 +960,27 @@ void main(void)
     EPwm8Regs.TBPHS.bit.TBPHS = 0;
 
     EALLOW;
-        //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
-        AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-        AdcbRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-        AdccRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-        AdcdRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
-        AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
-        AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
-        AdcSetMode(ADC_ADCC, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
-        AdcSetMode(ADC_ADCD, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
-        //Set pulse positions to late
-        AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-        AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-        AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-        AdcdRegs.ADCCTL1.bit.INTPULSEPOS = 1;
-        //power up the ADCs
-        AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-        AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-        AdccRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-        AdcdRegs.ADCCTL1.bit.ADCPWDNZ = 1;
-        //delay for 1ms to allow ADC time to power up
-        DELAY_US(1000);
+    //write configurations for all ADCs ADCA, ADCB, ADCC, ADCD
+    AdcaRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdcbRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdccRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdcdRegs.ADCCTL2.bit.PRESCALE = 6; //set ADCCLK divider to /4
+    AdcSetMode(ADC_ADCA, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+    AdcSetMode(ADC_ADCB, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+    AdcSetMode(ADC_ADCC, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+    AdcSetMode(ADC_ADCD, ADC_RESOLUTION_12BIT, ADC_SIGNALMODE_SINGLE); //read calibration settings
+    //Set pulse positions to late
+    AdcaRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdcbRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdccRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    AdcdRegs.ADCCTL1.bit.INTPULSEPOS = 1;
+    //power up the ADCs
+    AdcaRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    AdcbRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    AdccRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    AdcdRegs.ADCCTL1.bit.ADCPWDNZ = 1;
+    //delay for 1ms to allow ADC time to power up
+    DELAY_US(1000);
 
 
 
@@ -997,11 +1001,11 @@ void main(void)
     AdcaRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 
     //ADCB
-        //JS set SOC0 to pin4
-        AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
-        AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-        //JS EPWM5 ADCSOCA is 13
-        AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 11; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
+    //JS set SOC0 to pin4
+    AdcbRegs.ADCSOC0CTL.bit.CHSEL = 4; //SOC0 will convert Channel you choose Does not have to be B0
+    AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
+    //JS EPWM5 ADCSOCA is 13
+    AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 11; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
     //  AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
     //  AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     //  AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
@@ -1011,10 +1015,10 @@ void main(void)
     //  AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
     //  AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     //  AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
-        //JS set to the last converted SOC0
-        AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
-        AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
-        AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
+    //JS set to the last converted SOC0
+    AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
+    AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
+    AdcbRegs.ADCINTFLGCLR.bit.ADCINT1 = 1; //make sure INT1 flag is cleared
 
     EDIS;
 
@@ -1208,10 +1212,10 @@ __interrupt void SWI_isr(void) {
     //JS copy from the guideline to communicate with Labview
     if (NewLVData == 1) {
         NewLVData = 0;
-        Segbot_refspeed = fromLVvalues[0];
-        turnrate = fromLVvalues[1];
-        movement_dir = fromLVvalues[2];
-        printLV4 = fromLVvalues[3];
+        printLV1 = fromLVvalues[0];
+        printLV2 = fromLVvalues[1];
+        printLV3 = fromLVvalues[2];
+        rightwallmode = fromLVvalues[3];
         printLV5 = fromLVvalues[4];
         printLV6 = fromLVvalues[5];
         printLV7 = fromLVvalues[6];
@@ -1307,14 +1311,26 @@ __interrupt void SWI_isr(void) {
             distfront = 1400; // set to max reading if error
         }
 
+        if (rightwallmode==1){
+            rtwallfollow=0;
+            ltwallfollow=1;
 
+        }
+        if (rightwallmode==0){
+            rtwallfollow=1;
+            ltwallfollow=0;
+
+        }
         //JS right wall following controller
         if (rtwallfollow==1){
+            ltwallfollow=0;
             turn = -kprt *(refrt-distright);
+
             if (distfront <threshold1){
                 rtwallfollow =0;
             }
         }
+
         else{
             turn = -kpft *(refft-distfront);
 
@@ -1322,6 +1338,25 @@ __interrupt void SWI_isr(void) {
                 rtwallfollow =1;
             }
         }
+
+
+
+
+        if (ltwallfollow==1){
+            turn = -kprt *(refrt-distright);
+
+            if (distfront <threshold1){
+                ltwallfollow =0;
+            }
+        }
+        else{
+            turn = -kpft *(refft-distfront);
+
+            if(distfront>threshold2){
+                ltwallfollow =1;
+            }
+        }
+
     }
 
     //JS lab 7 exercise4, use trapezoidal rule to calculate turnref
@@ -1343,7 +1378,7 @@ __interrupt void SWI_isr(void) {
     //JS lab 7 exercise5, calculate error between Segbot_refspeed and average wheel velocity
     avgwheelvel=(vel_Left+vel_Right)/2.0;
 
-//    espeed=Segbot_refspeed-avgwheelvel;
+    //    espeed=Segbot_refspeed-avgwheelvel;
     espeed=vref-avgwheelvel;
 
     //JS lab 7 exercise5, calculate IK_espeed
@@ -1366,13 +1401,13 @@ __interrupt void SWI_isr(void) {
     if (turnbal<-4.0){
         turnbal = -4.0;
     }
-//    //Js lab 7 exercise4, satuarate turn between -4 and 4
-//    if (turn>4.0){
-//        turn = 4.0;
-//    }
-//    if (turn<-4.0){
-//        turn = -4.0;
-//    }
+    //    //Js lab 7 exercise4, satuarate turn between -4 and 4
+    //    if (turn>4.0){
+    //        turn = 4.0;
+    //    }
+    //    if (turn<-4.0){
+    //        turn = -4.0;
+    //    }
 
     //JS lab 7 exercise5, guard against integral espeed
     if (fabs(forwardbackwardcommand)>3){
@@ -1408,7 +1443,7 @@ __interrupt void SWI_isr(void) {
     }
 
     numSWIcalls++;
-//    delay_counter++;
+    //    delay_counter++;
 
     DINT;
 
@@ -1860,7 +1895,7 @@ __interrupt void SPIB_isr(void) {
     gyrox_raw = SpibRegs.SPIRXBUF;
     gyroy_raw = SpibRegs.SPIRXBUF;
     gyroz_raw = SpibRegs.SPIRXBUF;
-//JS lab7 exercise 1.6, covert to units of g and degree/s
+    //JS lab7 exercise 1.6, covert to units of g and degree/s
     accelx = accelx_raw*(4.0/32767.0);
     accely = accely_raw*(4.0/32767.0);
     accelz = accelz_raw*(4.0/32767.0);
@@ -1942,7 +1977,7 @@ __interrupt void SPIB_isr(void) {
         UARTPrint = 1; // Tell While loop to print
     }
 
-//JS lab7 exercise1.7, call functions to send motor angles
+    //JS lab7 exercise1.7, call functions to send motor angles
     //    ltangle = -readEncLeft();
     //    rtangle = readEncRight();
     //JS lab7 exercise1.8, drive motors open-loop
