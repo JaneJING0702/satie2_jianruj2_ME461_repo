@@ -91,7 +91,7 @@ float VLeftK =0.0;
 float VRtK =0.0;
 float eleftk =0.0;
 //float vref =0.0;
-float vref = 0.25;
+float vref = 0.2;
 float eleftk_1 = 0.0;
 float Ileftk =0.0;
 float Ileftk_1=0.0;
@@ -126,7 +126,7 @@ float distright =0.0;
 float distfront =0.0;
 float distright_1 = 0.0;
 float distfront_1 =0.0;
-float kprt = 0.003;
+float kprt = 0.005;
 float kpft =0.0005;
 float refrt =300;
 float refft =1400;
@@ -225,14 +225,27 @@ float kpspeed =0.35;
 float kispeed =1.5;
 float movement_dir = 0;
 float delay_counter = 0.0;
+float avgdist = 0.0;
+float sumdist = 0.0;
 float ltwallfollow =0.0;
+float setangle = 60;
+float standstill =0;
 
-float rightwallmode = 0.0;
+float rightwallmode = 1.0;
 int32_t ADCB1count =0;
 int32_t triggercounter=0;
 int32_t triggercounter1=0;
 int32_t triggercounter2=0;
+int32_t triggercounter3=0;
+int32_t triggercounter4=0;
 int32_t trigger=5;
+int32_t trigger2=2;
+int32_t allowcheck = 0;
+int32_t loopcalls = 0;
+int32_t turning = 0;
+
+
+
 
 extern uint16_t NewLVData;
 extern float fromLVvalues[LVNUM_TOFROM_FLOATS];
@@ -278,7 +291,6 @@ float b1[42]={   1.0730089836341656e-05, -1.4033136757606417e-04,    -8.55157224
 float b2[42]={   -3.8844527993015866e-04,    -2.3664740551879474e-03,    -1.0691589978498594e-04,    4.9679249374866346e-03, 2.0662268137202769e-03, -9.7775970043433198e-03,    -7.5616544659154921e-03,    1.5836367573881668e-02, 1.8523058007246369e-02, -2.0371737854348829e-02,    -3.5321189076675988e-02,    1.9620474917243901e-02, 5.5802749894096955e-02, -1.0463815568525393e-02,    -7.5415103897280025e-02,    -7.8580932140672136e-03,    8.8556300184164161e-02, 3.2825106488154628e-02, -9.0661006142012210e-02,    -5.9071260358928207e-02,    8.0110714080523115e-02, 8.0110714080523115e-02, -5.9071260358928207e-02,    -9.0661006142012210e-02,    3.2825106488154628e-02, 8.8556300184164161e-02, -7.8580932140672136e-03,    -7.5415103897280025e-02,    -1.0463815568525393e-02,    5.5802749894096955e-02, 1.9620474917243901e-02, -3.5321189076675988e-02,    -2.0371737854348829e-02,    1.8523058007246369e-02, 1.5836367573881668e-02, -7.5616544659154921e-03,    -9.7775970043433198e-03,    2.0662268137202769e-03, 4.9679249374866346e-03, -1.0691589978498594e-04,    -2.3664740551879474e-03,    -3.8844527993015866e-04};
 
 float b3[42]={   8.7176312545007108e-05, -9.7822753453535890e-05,    8.7984769708273952e-04, -1.9204558919963524e-03,    1.4764139888760860e-03, 2.4880720123794551e-03, -9.4132487141947042e-03,    1.3903188094981868e-02, -8.0916030226193068e-03,    -1.0891673840957591e-02,    3.4091943693858227e-02, -4.2756787417129676e-02,    2.1558495954171513e-02, 2.5539175572176286e-02, -7.1235562183782034e-02,    8.0403234529941331e-02, -3.6772081364320371e-02,    -3.9758906474796206e-02,    1.0171012069606974e-01, -1.0568216205831064e-01,    4.4617557066066925e-02, 4.4617557066066925e-02, -1.0568216205831064e-01,    1.0171012069606974e-01, -3.9758906474796206e-02,    -3.6772081364320371e-02,    8.0403234529941331e-02, -7.1235562183782034e-02,    2.5539175572176286e-02, 2.1558495954171513e-02, -4.2756787417129676e-02,    3.4091943693858227e-02, -1.0891673840957591e-02,    -8.0916030226193068e-03,    1.3903188094981868e-02, -9.4132487141947042e-03,    2.4880720123794551e-03, 1.4764139888760860e-03, -1.9204558919963524e-03,    8.7984769708273952e-04, -9.7822753453535890e-05,    8.7176312545007108e-05};
-
 
 
 
@@ -350,6 +362,7 @@ float readEncRight(void) {
     // of the DC motor's back shaft. Then the gear motor's gear ratio is 30:1.
     return (raw*(2*PI/(30*400)));
 }
+
 //JS lab 7 exercise 1.2, copy function setEPWM2A and setEPWM2B
 //JS saturate controleffort between -10 to 10 for right motor
 void setEPWM2A(float controleffort)
@@ -385,6 +398,7 @@ void setEPWM8A_RCServo(float angle)
     //JS control duty cycle to 4% when angle is -90, 8% when angle is 0, 12% when angle is 90, converts angle value between -90 and 90 to duty cycle 4% to 12%
     EPwm8Regs.CMPA.bit.CMPA = ((((float)8/(float)180)*angle+(float)8)/100)* EPwm8Regs.TBPRD;
 }
+
 __interrupt void ADCA_ISR (void) {
     //JS lab7 exercise 1.1, SPI transmission code copy from lab 6
     adca2result = AdcaResultRegs.ADCRESULT0;
@@ -526,75 +540,27 @@ __interrupt void ADCB_ISR (void) {
         triggercounter1=0;
     }
 
-
-    //    if (trigger>triggercounter1){
-    //        vref=1;
-    //        displayLEDletter(10);
-    //    }
-    //    else{
-    //        vref=0.0;
-    //        displayLEDletter(0);
-    //    }
-
-
-    //        }
-    if (diff2 >= 0.8){
-        triggercounter = 0;
-
-        //        trigger++;
-    }
-
-    //    if (trigger>triggercounter){
-    //        vref=0.75;
-    //        displayLEDletter(11);
-    //        //            trigger++;
-    //    }
-    //
-    //    else{
-    //        vref=0.0;
-    //        displayLEDletter(0);
-    //    }
-
-
-
-
-
-    //    else{
-    //            displayLEDletter(0);
-    //        }
-    if (diff3 >= 0.8                                ){
+    if (diff3 >= 0.8 ){
         triggercounter2=0;
     }
 
 
-    //    if (trigger>triggercounter2){
-    //        vref=0.1;
-    //        displayLEDletter(12);
-    //    }
-    //    else{
-    //        vref=0.0;
-    //        displayLEDletter(0);
-    //    }
-
 
     if (trigger>triggercounter1){
-        vref=0.25;
+        vref=0.5;
         displayLEDletter(10);
     } else if (trigger>triggercounter){
-        vref=0.25;
+        vref=1.5;
         displayLEDletter(11);
     } else if (trigger>triggercounter2){
-        vref=0.25;
+        vref=3.0;
         displayLEDletter(12);
     }     else{
-        vref=0.25;
+        vref=0.2;
         displayLEDletter(0);
     }
 
 
-    //    else{
-    //        displayLEDletter(0);
-    //    }
 
 
 
@@ -603,7 +569,6 @@ __interrupt void ADCB_ISR (void) {
     setDACA(ykb1+ykb2+ykb3+1.5);
 
 
-    //    setDACA(xkb1);
 
 
     // Print  voltage value to TeraTerm every 100ms
@@ -1006,15 +971,6 @@ void main(void)
     AdcbRegs.ADCSOC0CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
     //JS EPWM5 ADCSOCA is 13
     AdcbRegs.ADCSOC0CTL.bit.TRIGSEL = 11; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC0
-    //  AdcbRegs.ADCSOC1CTL.bit.CHSEL = ???; //SOC1 will convert Channel you choose Does not have to be B1
-    //  AdcbRegs.ADCSOC1CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    //  AdcbRegs.ADCSOC1CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC1
-    //  AdcbRegs.ADCSOC2CTL.bit.CHSEL = ???; //SOC2 will convert Channel you choose Does not have to be B2
-    //  AdcbRegs.ADCSOC2CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    //  AdcbRegs.ADCSOC2CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC2
-    //  AdcbRegs.ADCSOC3CTL.bit.CHSEL = ???; //SOC3 will convert Channel you choose Does not have to be B3
-    //  AdcbRegs.ADCSOC3CTL.bit.ACQPS = 99; //sample window is acqps + 1 SYSCLK cycles = 500ns
-    //  AdcbRegs.ADCSOC3CTL.bit.TRIGSEL = ???; // EPWM5 ADCSOCA or another trigger you choose will trigger SOC3
     //JS set to the last converted SOC0
     AdcbRegs.ADCINTSEL1N2.bit.INT1SEL = 0; //set to last SOC that is converted and it will set INT1 flag ADCB1
     AdcbRegs.ADCINTSEL1N2.bit.INT1E = 1; //enable INT1 flag
@@ -1186,11 +1142,6 @@ void main(void)
     while(1)
     {
         if (UARTPrint == 1 ) {
-            //serial_printf(&SerialA,"Num Timer2:%ld Num SerialRX: %ld\r\n",CpuTimer2.InterruptCount,numRXA);
-            //JS lab 7 exercise1.7, print values to test
-            //			serial_printf(&SerialA,"a:%.3f,%.3f,%.3f  g:%.3f,%.3f,%.3f\r\n",accelx,accely,accelz,gyrox,gyroy,gyroz);
-            //			serial_printf(&SerialA,"D1 %ld D2 %ld",dis_1,dis_3);
-            //            serial_printf(&SerialA," St1 %ld St2 %ld\n\r",measure_status_1,measure_status_3);
             serial_printf(&SerialA,"tilt value:%.3f gyro value:%.3f left wheel:%.3f right wheel:%.3f\n\r", tilt_value, gyro_value, LeftWheel, RightWheel);
 
             UARTPrint = 0;
@@ -1298,8 +1249,9 @@ __interrupt void SWI_isr(void) {
     vel_whldiff_1=vel_whldiff;
     whldiff_1=whldiff;
 
-    if (delay_counter > 10){
 
+
+    if (delay_counter > 10) {
         if (measure_status_1 == 0) {
             distright = dis_1;
         } else {
@@ -1311,55 +1263,110 @@ __interrupt void SWI_isr(void) {
             distfront = 1400; // set to max reading if error
         }
 
-        if (rightwallmode==1){
-            rtwallfollow=0;
-            ltwallfollow=1;
+        sumdist += distright;
 
-        }
-        if (rightwallmode==0){
-            rtwallfollow=1;
-            ltwallfollow=0;
+        static int stay_counter = 0;    // Counter for 2-second checking
+        static int checking_side = 0;  // 0 for current side, 1 for opposite side
+        static int turning_check = 0;  // 1 if currently checking the opposite side
 
+        if (turning_check == 0){
+            setEPWM8A_RCServo(setangle);
         }
+        if (turning == 0) {
+            if ((numSWIcalls % 100) == 0) { // Every 100 SWI calls (~.1 second)
+                avgdist = sumdist / 100;
+
+                if (avgdist > refrt * 2.2 && turning_check == 0) {//if no wall detected and not checking other side
+
+                    stay_counter = 0;
+                    turning_check = 1; // Start checking the opposite side
+                    sumdist = 0;// Reset sumdist for opposite side checking
+                }else if(avgdist <= refrt * 2){ //if wall on current side is detected
+                    setEPWM8A_RCServo(setangle);
+                }
+
+                if (turning_check == 1) { //if checking other side
+                    standstill =1;
+                    setEPWM8A_RCServo(-(setangle+30*setangle/fabs(setangle))); // Turn to check the opposite side
+                    //                        sumdist = 0; // Reset sumdist for opposite side checking
+
+                    if (stay_counter >= 6) { // After 2.5 seconds
+                        if (avgdist > refrt * 2.2) {
+                            // Turn to the opposite side as it exceeds the threshold
+                            setEPWM8A_RCServo(setangle);
+                            turning = 1;
+                            turning_check = 0;
+                            standstill=0;
+                        }
+                    }else {
+                        if(avgdist <= refrt * 2){ //before 2.5 seconds and it detect the wall, switch wall following
+                            setangle*=-1;
+                            turning_check = 0;
+                            standstill=0;
+                        }
+                        // Reset and continue checking the current side
+                        setEPWM8A_RCServo(-(setangle+30*setangle/fabs(setangle)));
+                    }
+                    stay_counter++;
+                }
+
+                sumdist = 0; // Reset distance sum for the next average calculation
+            }
+        } else {
+            if ((numSWIcalls % 100) == 0) { // While turning
+                avgdist = sumdist / 100;
+                if (avgdist < refrt) {
+                    turning = 0; // Stop turning when below reference threshold
+                }
+                sumdist = 0.0;
+            }
+        }
+
+
         //JS right wall following controller
-        if (rtwallfollow==1){
-            ltwallfollow=0;
-            turn = -kprt *(refrt-distright);
+        if (setangle > 0.0 && standstill == 0){ // RWF
+            if (rtwallfollow==1){
+                turn = -kprt *(refrt-distright);
 
-            if (distfront <threshold1){
-                rtwallfollow =0;
+                if (distfront <threshold1){
+                    rtwallfollow =0;
+                }
+            }
+            else{
+                turn = -kpft *(refft-distfront);
+
+                if(distfront>threshold2){
+                    rtwallfollow =1;
+                }
             }
         }
+        else if (standstill == 0){ // LWF
+            if (rtwallfollow==1){
+                turn = kprt *(refrt-distright);
 
-        else{
-            turn = -kpft *(refft-distfront);
+                if (distfront <threshold1){
+                    rtwallfollow =0;
+                }
+            }
 
-            if(distfront>threshold2){
-                rtwallfollow =1;
+            else{
+                turn = kpft *(refft-distfront);
+
+                if(distfront>threshold2){
+                    rtwallfollow =1;
+                }
             }
         }
-
-
-
-
-        if (ltwallfollow==1){
-            turn = -kprt *(refrt-distright);
-
-            if (distfront <threshold1){
-                ltwallfollow =0;
-            }
-        }
-        else{
-            turn = -kpft *(refft-distfront);
-
-            if(distfront>threshold2){
-                ltwallfollow =1;
-            }
+        else {
+            vref = 0;
+            turn = 0;
         }
 
     }
 
-    //JS lab 7 exercise4, use trapezoidal rule to calculate turnref
+
+
+
     turnref = turnref_1+(0.004*(turn+turnrate_1)/2);
     turnref_1=turnref;
     turnrate_1=turn;
@@ -1401,13 +1408,6 @@ __interrupt void SWI_isr(void) {
     if (turnbal<-4.0){
         turnbal = -4.0;
     }
-    //    //Js lab 7 exercise4, satuarate turn between -4 and 4
-    //    if (turn>4.0){
-    //        turn = 4.0;
-    //    }
-    //    if (turn<-4.0){
-    //        turn = -4.0;
-    //    }
 
     //JS lab 7 exercise5, guard against integral espeed
     if (fabs(forwardbackwardcommand)>3){
@@ -1435,12 +1435,7 @@ __interrupt void SWI_isr(void) {
     //JS lab 7 exercise3, drive motors with control efforts
     setEPWM2A(uright);
     setEPWM2B(-uleft);
-    if(rightwallmode == 0.0){
-        setEPWM8A_RCServo(90);
-    }
-    else{
-        setEPWM8A_RCServo(-90);
-    }
+
 
     numSWIcalls++;
     //    delay_counter++;
@@ -1455,170 +1450,7 @@ __interrupt void cpu_timer0_isr(void)
     CpuTimer0.InterruptCount++;
 
     numTimer0calls++;
-    //JS copy from the guideline to communicate with Labview
-    //    if (NewLVData == 1) {
-    //        NewLVData = 0;
-    //        vref = fromLVvalues[0];
-    //        turn = fromLVvalues[1];
-    //        printLV3 = fromLVvalues[2];
-    //        printLV4 = fromLVvalues[3];
-    //        printLV5 = fromLVvalues[4];
-    //        printLV6 = fromLVvalues[5];
-    //        printLV7 = fromLVvalues[6];
-    //        printLV8 = fromLVvalues[7];
-    //    }
-    //    if((numTimer0calls%62) == 0) { // change to the counter variable of you selected 4ms. timer
-    //        DataToLabView.floatData[0] = x;
-    //        DataToLabView.floatData[1] = y;
-    //        DataToLabView.floatData[2] = bearing;
-    //        DataToLabView.floatData[3] = 2.0*((float)numTimer0calls)*.001;
-    //        DataToLabView.floatData[4] = 3.0*((float)numTimer0calls)*.001;
-    //        DataToLabView.floatData[5] = (float)numTimer0calls;
-    //        DataToLabView.floatData[6] = (float)numTimer0calls*4.0;
-    //        DataToLabView.floatData[7] = (float)numTimer0calls*5.0;
-    //        LVsenddata[0] = '*'; // header for LVdata
-    //        LVsenddata[1] = '$';
-    //        for (int i=0;i<LVNUM_TOFROM_FLOATS*4;i++) {
-    //            if (i%2==0) {
-    //                LVsenddata[i+2] = DataToLabView.rawData[i/2] & 0xFF;
-    //            } else {
-    //                LVsenddata[i+2] = (DataToLabView.rawData[i/2]>>8) & 0xFF;
-    //            }
-    //        }
-    //        serial_sendSCID(&SerialD, LVsenddata, 4*LVNUM_TOFROM_FLOATS + 2);
-    //    }
-    //    if ((numTimer0calls%50) == 0) {
-    //        PieCtrlRegs.PIEIFR12.bit.INTx9 = 1;  // Manually cause the interrupt for the SWI
-    //    }
 
-
-    //    //JS angular position of wheels
-    //    LeftWheel = -readEncLeft();
-    //    RightWheel = readEncRight();
-    //    //JS convert to linear position , pos = angle*radius
-    //    LeftWheelmeter = LeftWheel*radius;
-    //    RightWheelmeter = RightWheel*radius;
-    //
-    //    //JS calculate the velocity of wheels using change position over changing time
-    //    PosLeft_k = LeftWheelmeter;
-    //    VLeftK = (PosLeft_k-PosLeft_k_1)/0.004;
-    //    PosLeft_k_1 = PosLeft_k;
-    //    PosRt_k = RightWheelmeter;
-    //    VRtK = (PosRt_k-PosRt_k_1)/0.004;
-    //    PosRt_k_1 = PosRt_k;
-    //
-    //    //JS implemented coupled PI controller structure for left
-    //    eturn = turn+(VLeftK - VRtK);
-    //    eleftk = vref - VLeftK-kpturn*eturn;
-    //    if (fabs(uleft)>10.0){
-    //       Ileftk = Ileftk_1*0.95;
-    //    } else {
-    //        Ileftk = Ileftk_1 + (0.004*(eleftk+eleftk_1)/2);
-    //    }
-    //
-    //    uleft = kp*eleftk+Ki*Ileftk;
-    //    eleftk_1 = eleftk;
-    //    Ileftk_1 = Ileftk;
-    //
-    //    //JS implemented coupled PI controller structure for right
-    //    ertk = vref - VRtK+kpturn*eturn;
-    //    if (fabs(uleft)>10.0){
-    //       Irtk = Irtk_1*0.95;
-    //    } else {
-    //        Irtk = Irtk_1 + (0.004*(ertk+ertk_1)/2);
-    //    }
-    //
-    //    uright = kp*ertk+Ki*Irtk;
-    //    ertk_1 = ertk;
-    //    Irtk_1 = Irtk;
-    //
-    //    //JS pass calculated us to setEPWM to run the motors
-    ////    setEPWM2A(uright);
-    ////    setEPWM2B(-uleft);
-    //
-    //    //JS implemented pose calculations
-    //    angvel_left = VLeftK/radius;
-    //    angvel_rt = VRtK/radius;
-    //    bearing = (radius/widthrob)*(RightWheel-LeftWheel);
-    //    beavg = 0.5*(RightWheel+LeftWheel);
-    //    beavgdot = 0.5*(angvel_left+angvel_rt);
-    //    xrdot = radius*beavgdot*cos(bearing);
-    //    yrdot = radius*beavgdot*sin(bearing);
-    //    //JS x and y calculated using Trapezoidal Rule integration
-    //    x = x_1+(0.004*(xrdot+x_1dot)/2);
-    //    y = y_1+(0.004*(yrdot+y_1dot)/2);
-    //    x_1 = x;
-    //    y_1 = y;
-    //
-    //    //JS copy from guideline
-    //    if (measure_status_1 == 0) {
-    //        distright = dis_1;
-    //    } else {
-    //        distright = 1400; // set to max reading if error
-    //    }
-    //    if (measure_status_3 == 0) {
-    //        distfront = dis_3;
-    //    } else {
-    //        distfront = 1400; // set to max reading if error
-    //    }
-    //
-    //
-    //    //JS right wall following controller
-    //    if (rtwallfollow==1){
-    //        turn = kprt *(refrt-distright);
-    //        vref=0.25;
-    //        if (distfront <threshold1){
-    //            rtwallfollow =0;
-    //        }
-    //        //JS when microphone filter signal is around 2000Hz, robot holds position
-    //        if (ykb1>0.4 || ykb1<-0.4){
-    //            vref=-0.25;
-    //        }
-    //    }
-    //    else{
-    //        turn = kpft *(refft-distfront);
-    //        vref=0.25;
-    //        if(distfront>threshold2){
-    //            rtwallfollow =1;
-    //        }
-    //        //JS when microphone filter signal is around 2000Hz, robot holds position
-    //        if (ykb1>0.4 || ykb1<-0.4){
-    //            vref=-0.25;
-    //        }
-    //    }
-    //
-    //    distright_1 =distright;
-    //    distfront_1 = distfront;
-    //
-    //
-    //    if ((numTimer0calls%250) == 0) {
-    //        displayLEDletter(LEDdisplaynum);
-    //        LEDdisplaynum++;
-    //        if (LEDdisplaynum == 0xFFFF) {  // prevent roll over exception
-    //            LEDdisplaynum = 0;
-    //        }
-    //    }
-
-
-    //Clear GPIO9 Low to act as a Slave Select. Right now, just to scope. Later to select DAN28027 chip
-    //GpioDataRegs.GPACLEAR.bit.GPIO9 = 1;
-    //    SpibRegs.SPIFFRX.bit.RXFFIL = 2; // Issue the SPIB_RX_INT when two values are in the RX FIFO
-    //    SpibRegs.SPITXBUF = 0x4A3B; // 0x4A3B and 0xB517 have no special meaning. Wanted to send
-    //    SpibRegs.SPITXBUF = 0xB517; // something so you can see the pattern on the Oscilloscope
-    //    SpibRegs.SPIFFRX.bit.RXFFIL = 3; // Issue the SPIB_RX_INT when two values are in the RX FIFO
-    //    SpibRegs.SPITXBUF = 0xDA;
-    //    SpibRegs.SPITXBUF = 500; // PWM value
-    //    SpibRegs.SPITXBUF = 2200; // PWM Value
-
-
-    //
-    //    if ((numTimer0calls%50) == 0) {
-    //        // Blink LaunchPad Red LED
-    //        GpioDataRegs.GPBTOGGLE.bit.GPIO34 = 1;
-    //    }
-    //
-    //
-    //    // Acknowledge this interrupt to receive more interrupts from group 1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP1;
 }
 
@@ -1630,20 +1462,14 @@ __interrupt void cpu_timer1_isr(void)
     triggercounter++;
     triggercounter1++;
     triggercounter2++;
+    triggercounter3++;
     CpuTimer1.InterruptCount++;
 }
 
 // cpu_timer2_isr CPU Timer2 ISR
 __interrupt void cpu_timer2_isr(void)
 {
-    //    // Blink LaunchPad Blue LED
-    //    GpioDataRegs.GPATOGGLE.bit.GPIO31 = 1;
-    //
-    //    CpuTimer2.InterruptCount++;
-    //
-    //    if ((CpuTimer2.InterruptCount % 10) == 0) {
-    //        //		UARTPrint = 1;
-    //    }
+
 }
 
 void setupSpib(void) //Call this function in main() somewhere after the DINT; line of code.
